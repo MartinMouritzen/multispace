@@ -6,8 +6,8 @@ class Player {
 	*
 	*/
 	constructor(socket) {
-		this.x = 0;
-		this.y = 0;
+		this.x = 200;
+		this.y = 200;
 		
 		this.angle = 0;
 		

@@ -12,12 +12,11 @@ class Server {
 	*/
 	initStaticFiles() {
 		app.get('/',(req, res) => {
-			res.sendFile(__dirname + '/client/index.html');
-		});
-		app.get('/game',(req, res) => {
 			res.sendFile(__dirname + '/client/game.html');
 		});
-		app.use('/client',express.static(__dirname + '/client'));
+		app.use('/js/',express.static(__dirname + '/client/js/'));
+		app.use('/css/',express.static(__dirname + '/client/css/'));
+		app.use('/resources/',express.static(__dirname + '/client/resources/'));
 	}
 	/**
 	*

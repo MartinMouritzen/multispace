@@ -1,75 +1,56 @@
 <html>
 <head>
 <title>SpaceGame</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.0/jquery.min.js"></script>
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-<script src="./client/js/Camera.js"></script>
-<script src="./client/js/Client.js"></script>
-<script src="./client/js/Ship.js"></script>
-<script src="./client/js/ClientPlayer.js"></script>
+<script src="./js/Login.js"></script>
+<script src="./js/Tools.js"></script>
+<script src="./js/Input.js"></script>
+<script src="./js/GameCanvas.js"></script>
+<script src="./js/Network.js"></script>
+<script src="./js/Game.js"></script>
+<script src="./js/Minimap.js"></script>
+<script src="./js/Chat.js"></script>
+<script src="./js/Camera.js"></script>
+<script src="./js/Client.js"></script>
+<script src="./js/Ship.js"></script>
+<script src="./js/ClientPlayer.js"></script>
 <script>
 var client = new Client();
 window.onload = () => {
 	client.init();
 };
 </script>
-<style type="text/css">
-html, body {
-	margin: 0px;
-	padding: 0px;
-	
-	width: 100%;
-	height: 100%;
-	
-	overflow: hidden;
-}
-#chat {
-	width: 400px;
-	height: 400px;
-	position: absolute;
-	bottom: 0px;
-	left: 0px;
-	
-	background-color: rgba(0, 0, 0, 0.7);
-}
-#chatMessages {
-	height: 360px;
-	overflow: auto;
-}
-#chatSender {
-	padding: 10px;
-	
-}
-#chatInput {
-	width: 100%;
-	border: 0px;
-	
-	height: 30px;
-	padding: 5px;
-	
-	display: none;
-}
-.chatMessage {
-	padding: 10px;
-	clear: both;
-	font-family: Arial;
-	font-size: 12px;
-}
-.chatMessage .chatUser {
-	color: #94af9a;
-	float: left;
-	margin-right: 5px;
-	padding: 5px;
-	font-weight: bold;
-}
-.chatMessage .chatText {
-	color: #FFFFFF;
-	padding-top: 5px;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="./css/style.css" />
 </head>
 <body>
+<div id="loginOverlay" style="display: none;">&nbsp;</div>
+<img src="/resources/images/login-screen/logo2.png" class="gameLogoSplash" style="display: none;">
+<div id="loginScreen" style="display:none;">
+	<div style="text-align:center;">
+		<img src="/resources/images/login-screen/logo.png" class="loginLogo">
+	</div>
+	<div class="loginMessage">
+		<p>Greetings commander,</p>
+		<p>Welcome to Primordial Prophecy, a multiplayer sci-fi game where you take control of your own spacecraft, and go on amazing adventures.</p>
+
+		<p>The game is in very very early stages of development, so there's bound to be crazy bugs, but I hope you still want to be a part of shaping the game to whatever you want it to be.</p>
+		
+		<p>I hope you have lots of fun, see you in space.</p>
+		
+		<p>Avo</p>
+		
+	</div>
+	
+	<form method="GET" action="/" onsubmit="Login.loginFromForm();return false;">
+		<div style="margin-top: 40px;margin-bottom: 10px;">
+			What is your name?
+		</div>
+		<input type="text" name="username" id="username"> <input type="submit" value="Let me play!">
+	</form>
+</div>
 <canvas id="ctx" width="1920" height="1080" style="border:1px solid #000000;"></canvas>
-<div id="chat">
+<div id="chat" style="display: none;">
 	<form onsubmit="return false;">
 		<div id="chatMessages">
 			<!--
@@ -85,10 +66,22 @@ html, body {
 				<div class="chatUser">Avo:</div>
 				<div class="chatText">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent gravida in velit et sagittis. Mauris laoreet maximus hendrerit. Mauris faucibus purus non velit tempus, a feugiat dui finibus. Aliquam nec urna ex. Etiam hendrerit elit nec ligula efficitur, ac convallis justo tristique. Fusce sagittis nibh eget diam varius mattis. </div>
 			</div>
+			<div class="chatMessage">
+				<div class="chatUser">Avo:</div>
+				<div class="chatText">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent gravida in velit et sagittis. Mauris laoreet maximus hendrerit. Mauris faucibus purus non velit tempus, a feugiat dui finibus. Aliquam nec urna ex. Etiam hendrerit elit nec ligula efficitur, ac convallis justo tristique. Fusce sagittis nibh eget diam varius mattis. </div>
+			</div>
+			<div class="chatMessage">
+				<div class="chatUser">Avo:</div>
+				<div class="chatText">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent gravida in velit et sagittis. Mauris laoreet maximus hendrerit. Mauris faucibus purus non velit tempus, a feugiat dui finibus. Aliquam nec urna ex. Etiam hendrerit elit nec ligula efficitur, ac convallis justo tristique. Fusce sagittis nibh eget diam varius mattis. </div>
+			</div>
+			<div class="chatMessage">
+				<div class="chatUser">Avo:</div>
+				<div class="chatText">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent gravida in velit et sagittis. Mauris laoreet maximus hendrerit. Mauris faucibus purus non velit tempus, a feugiat dui finibus. Aliquam nec urna ex. Etiam hendrerit elit nec ligula efficitur, ac convallis justo tristique. Fusce sagittis nibh eget diam varius mattis. </div>
+			</div>
 			-->
 		</div>
 		<div id="chatSender">
-			<input type="text" name="message" id="chatInput" onfocus="client.startChat();" onblur="client.stopChat();">
+			<input type="text" name="message" id="chatInput" onblur="game.gui.chat.chatBlurred();">
 		</div>
 	</form>
 </div>
