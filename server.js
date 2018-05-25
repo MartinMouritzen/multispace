@@ -2,9 +2,14 @@ var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
 
+var Laser = require('./server/Laser.js');
 var Player = require('./server/Player.js');
 
 var p2 = require('p2');
+
+global.game = {};
+global.game.SHIP = Math.pow(2,1);
+global.game.LASER = Math.pow(2,2);
 
 class Server {
 	/**
@@ -34,7 +39,7 @@ class Server {
 	 
 		var player = new Player(socket);
 		
-		this.world.addBody(player.shipBody);
+		this.world.addBody(player.rigidBody);
 		
 		this.players[socket.id] = player;
 		
@@ -60,6 +65,7 @@ class Server {
 		});
 	   
 		socket.on('disconnect',() => {
+			global.game.world.removeBody(this.players[socket.id].rigidBody);
 			delete this.players[socket.id];
 		});
 	   
@@ -82,6 +88,9 @@ class Server {
 			else if (data.inputId === 'down') {
 				player.pressingDown = data.state;
 			}
+			else if (data.inputId === 'shoot') {
+				player.shooting = data.state;
+			}
 		});
 	}
 	/**
@@ -89,6 +98,7 @@ class Server {
 	*/
 	init() {
 		this.players = {};
+		this.gameObjects = [];
 		this.initStaticFiles();
 
 		serv.listen(20001);
@@ -97,40 +107,110 @@ class Server {
 		this.world = new p2.World({
 			gravity : [0,0],
 		});
+		this.world.defaultContactMaterial.friction = 0;
+		
+		this.world.on("beginContact",(event) => {
+			this.collisionDetected(event);
+		});
+		
+		global.game.world = this.world;
 		
 		var io = require('socket.io')(serv,{});
 
 		io.sockets.on('connection',(socket) => {
-		   this.newConnection(socket);
+			this.newConnection(socket);
 		});
 		 
-		setInterval(() => {
-			this.world.step(1/60);
-			var pack = [];
-
-			for(var i in this.players){
-				var player = this.players[i];
-				if (!player.name) {
-					continue;
+		setInterval(() => { this.tick() },1000 / 25);
+	}
+	/**
+	*
+	*/
+	collisionDetected(event) {
+		// console.log(event.bodyA);
+		// event.bodyB;
+		
+		if (event.bodyA.type == 'LASER') {
+			this.removeGameObject(event.bodyA.gameObject);
+		}
+		if (event.bodyB.type == 'LASER') {
+			this.removeGameObject(event.bodyB.gameObject);
+		}
+	}
+	removeGameObject(gameObject,number) {
+		if (!number) {
+			for(var i in this.gameObjects) {
+				var checkGameObject = this.gameObjects[i];
+				if (checkGameObject == gameObject) {
+					this.removeGameObject(gameObject,i);
+					break;
 				}
-				player.updatePosition();
-				
-				pack.push({
-					x: player.shipBody.position[0],
-					y: player.shipBody.position[1],
-					isThrusting: player.pressingUp,
-					isReversing: player.pressingDown,
-					angle: player.shipBody.angle,
-					id: player.id,
-					name: player.name
-				});	
 			}
-			for(var i in this.players){
-				this.players[i].socket.emit('newPositions',pack);
+		}
+		else {
+			this.gameObjects.splice(number,1);
+			global.game.world.removeBody(gameObject.rigidBody);
+		}
+	}
+	/**
+	*
+	*/
+	tick() {
+		this.world.step(1/60);
+		var pack = [];
+
+		for(var i in this.players) {
+			var player = this.players[i];
+			if (!player.name) {
+				continue;
 			}
-		},1000 / 25);
+			player.updatePosition();
+			
+			if (player.shooting) {
+				if (global.game.world.time - player.lastShootTime > player.weaponReloadTime) {
+					var laser = new Laser(player.rigidBody.position[0],player.rigidBody.position[1],player.rigidBody.angle,player);
+					global.game.world.addBody(laser.rigidBody);
+					this.gameObjects.push(laser);
+					player.lastShootTime = global.game.world.time;
+				}
+			}
+			
+			pack.push({
+				type: 'PLAYER',
+				x: player.rigidBody.position[0],
+				y: player.rigidBody.position[1],
+				isThrusting: player.pressingUp,
+				isReversing: player.pressingDown,
+				angle: player.rigidBody.angle,
+				id: player.id,
+				name: player.name
+			});	
+		}
+		
+		for(var i in this.gameObjects) {
+			var gameObject = this.gameObjects[i];
+			if(gameObject.dieTime && gameObject.dieTime <= global.game.world.time){
+				this.removeGameObject(gameObject,i);
+				i--;
+				continue;
+			}
+			pack.push({
+				type: gameObject.type,
+				x: gameObject.rigidBody.position[0],
+				y: gameObject.rigidBody.position[1],
+				angle: gameObject.rigidBody.angle
+			});
+		}
+		
+		for(var i in this.players){
+			this.players[i].socket.emit('newPositions',pack);
+		}
+		// console.log(this.gameObjects.length);
+		console.log(this.world.bodies.length);
 	}
 }
 
 var server = new Server();
 server.init();
+
+game.server = server;

@@ -17,6 +17,22 @@ class Chat {
 	showChat() {
 		$('#chat').fadeIn('slow');
 	}
+	startOrEndChat() {
+		if (this.chatting) {
+			var message = this.getTypedMessage();
+			if (message.length > 0) {
+				game.network.socket.emit('chatMessage',{ message: message });
+			}
+			this.hideInput();
+			this.stopChat();
+		}
+		else {
+			game.client.stopAllMovement();
+			
+			this.showInput();
+			this.startChat();
+		}
+	}
 	/**
 	*
 	*/

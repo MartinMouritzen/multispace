@@ -15,6 +15,9 @@ class GameCanvas {
 
 		this.sun = new Image();
 		this.sun.src = '/resources/images/planets/sun.png';
+		
+		this.laser = new Image();
+		this.laser.src = '/resources/images/lasers/laser1.png';
 
 		this.planet1 = new Image();
 		this.planet1.src = '/resources/images/planets/aurelia.png';
@@ -143,39 +146,68 @@ class GameCanvas {
 		this.context.restore();
 
 		for(var i = 0 ; i < data.length; i++) {
-			var shipImage = this.ship1;
-			var jetImage = this.jet1;
-			
-			this.context.save();
+			if (data[i].type == 'LASER') {
+				var laserImage = this.laser;
+				
 
-			this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
-			
-			this.context.translate(shipImage.width / 2,shipImage.height / 2);
-			
-			this.context.rotate(data[i].angle);
-			
-			if (data[i].isThrusting) {
-				this.context.drawImage(jetImage,-(shipImage.width / 2) + 12,(shipImage.height / 2) - 10);
-			}
-			else if (data[i].isReversing) {
 				this.context.save();
-				this.context.scale(1,-1);
-				this.context.drawImage(jetImage,-16,16,(jetImage.width / 2),(jetImage.height / 2));
-				this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
+	
+				this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
+				
+				this.context.rotate(data[i].angle);
+				
+				this.context.drawImage(laserImage,-(laserImage.width / 2),-(laserImage.height / 2));
+				
+				
 				this.context.restore();
 			}
-			
-			this.context.drawImage(shipImage,-(shipImage.width / 2),-(shipImage.height / 2));
-			
-			if (game.client.loggedIn) {
-				this.context.rotate(-data[i].angle);
-				this.context.fillStyle = '#000000';
-				this.context.fillText(data[i].name,-9,shipImage.height + 11);
-				this.context.fillStyle = '#FFFFFF';
-				this.context.fillText(data[i].name,-10,shipImage.height + 10);
+			else if (data[i].type == 'PLAYER') {
+				var shipImage = this.ship1;
+				var jetImage = this.jet1;
+				
+				this.context.save();
+	
+				this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
+				
+				// this.context.translate(shipImage.width / 2,shipImage.height / 2);
+				
+				this.context.rotate(data[i].angle);
+				
+				if (data[i].isThrusting) {
+					this.context.drawImage(jetImage,-(shipImage.width / 2) + 12,(shipImage.height / 2) - 10);
+				}
+				else if (data[i].isReversing) {
+					this.context.save();
+					this.context.scale(1,-1);
+					this.context.drawImage(jetImage,-16,16,(jetImage.width / 2),(jetImage.height / 2));
+					this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
+					this.context.restore();
+				}
+				/*
+				this.context.beginPath();
+				this.context.arc(0,0,30,0,2*Math.PI);
+				this.context.fill();
+				this.context.closePath();
+				*/
+				
+				this.context.drawImage(shipImage,-(shipImage.width / 2),-(shipImage.height / 2));
+				
+				if (game.client.loggedIn) {
+					this.context.rotate(-data[i].angle);
+					// this.context.fillStyle = '#000000';
+					// this.context.fillText(data[i].name,-9,shipImage.height + 11);
+					// this.context.fillStyle = '#FFFFFF';
+					// this.context.fillText(data[i].name,-10,shipImage.height + 10);
+					
+					this.context.fillStyle = '#FFFFFF';
+					this.context.strokeStyle = '#000000';
+					this.context.lineWidth = 3;
+					this.context.miterLimit = 2;
+					this.context.strokeText(data[i].name,-10,shipImage.height + 10);
+					this.context.fillText(data[i].name,-10,shipImage.height + 10);
+				}
+				this.context.restore();
 			}
-			
-			this.context.restore();
 		}
 		
 		if (game.client.loggedIn) {

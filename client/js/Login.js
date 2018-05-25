@@ -14,7 +14,7 @@ class Login {
 	*/
 	static loginFromForm() {
 		var username = $('#username').val();
-		if (username.length > 2) {
+		if (username.length > 2 && username.length < 10) {
 			game.network.socket.emit('login', { name: username });
 			this.removeLoginScreen();
 		}
