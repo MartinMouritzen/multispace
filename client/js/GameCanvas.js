@@ -6,6 +6,8 @@ class GameCanvas {
 		this.canvas = document.getElementById("ctx");
 		this.context = this.canvas.getContext("2d");
 		
+		this.zoomLevel = 1;
+		
 		window.addEventListener('resize',() => { this.resizeCanvas(); });
 		
 		this.resizeCanvas();
@@ -105,22 +107,28 @@ class GameCanvas {
 			}
 		}
 		
+		this.context.save();
+		
 		// Repaint canvas. Move to own function
 		this.context.font= "12px Arial";
 		this.context.fillStyle = '#000000';
 		
 		var currentPlayer = false;
 		for(var i = 0 ; i < data.length; i++) {
-			if (data[i].id == game.client.id) {
+			if (game.client.loggedIn && data[i].id == game.client.id) {
 				currentPlayer = data[i];
 			}
 		}
-		
-		var cameraX = -100;
-		var cameraY = 0;
+		var realCameraX = -100;
+		var realCameraY = 0;
+		var cameraX = realCameraX;
+		var cameraY = realCameraY;
+
 		if (currentPlayer) {
-			cameraX = currentPlayer.x - viewportX;
-			cameraY = currentPlayer.y - viewportY;
+			realCameraX = currentPlayer.x - viewportX;
+			realCameraY = currentPlayer.y - viewportY;
+			cameraX = currentPlayer.x - viewportX / this.zoomLevel;
+			cameraY = currentPlayer.y - viewportY / this.zoomLevel;
 		}
 		
 		// this.context.drawImage(this.background,0,0,window.innerWidth,window.innerHeight);
@@ -128,6 +136,8 @@ class GameCanvas {
 		
 		this.context.drawImage(this.stars1,-cameraX * 0.1,-cameraY * 0.1);
 		this.context.drawImage(this.stars2,-cameraX * 0.4,-cameraY * 0.4);
+		
+		this.context.scale(this.zoomLevel,this.zoomLevel);
 		
 		// game.drawSprite(game.sprites["spr_stars01"], viewportX + (game.camera.x / 1.05), viewportY + (game.camera.y / 1.05));
 		// game.drawSprite(game.sprites["spr_stars02"], viewportX + (game.camera.x / 1.1), viewportY + (game.camera.y / 1.1));
@@ -164,6 +174,8 @@ class GameCanvas {
 			else if (data[i].type == 'PLAYER') {
 				var shipImage = this.ship1;
 				var jetImage = this.jet1;
+				
+				this.context.textAlign = 'center';
 				
 				this.context.save();
 	
@@ -203,12 +215,31 @@ class GameCanvas {
 					this.context.strokeStyle = '#000000';
 					this.context.lineWidth = 3;
 					this.context.miterLimit = 2;
-					this.context.strokeText(data[i].name,-10,shipImage.height + 10);
-					this.context.fillText(data[i].name,-10,shipImage.height + 10);
+					this.context.strokeText(data[i].name,0,shipImage.height + 10);
+					this.context.fillText(data[i].name,0,shipImage.height + 10);
+					
+					this.context.translate(-50,0);
+					
+					this.context.fillStyle = '#FFFFFF';
+					this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
+					
+					var healthBarGradient = this.context.createLinearGradient(0,0,100,0);
+					healthBarGradient.addColorStop(0,'#5c0304');
+					// healthBarGradient.addColorStop(0.5,'#98010d');
+					healthBarGradient.addColorStop(1,'#98010d');
+					
+					this.context.fillStyle = healthBarGradient;
+					this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
+
+					this.context.strokeStyle  = '#000000';
+					this.context.lineWidth = 1;
+					this.context.strokeRect(0,shipImage.height + 20,100,10);
+					
 				}
 				this.context.restore();
 			}
 		}
+		this.context.restore();
 		
 		if (game.client.loggedIn) {
 			this.context.fillStyle = '#FFFFFF';
@@ -221,17 +252,22 @@ class GameCanvas {
 				this.context.fillText(Math.round(currentPlayer.x / 100) + ':' + Math.round(currentPlayer.y / 100),window.innerWidth - 100,window.innerHeight - 100);
 			}
 			// CameraX and Y can probably be moved onto the camera object, then we don't have to pass them around
-			this.paintMiniMap(cameraX,cameraY);
+			this.paintMiniMap(realCameraX,realCameraY);
 			// game.gui.miniMap.paint(this.context,cameraX,cameraY);
 		}
+		
+		
 	}
 	paintMiniMap(cameraX,cameraY) {
 		this.context.save();
-		var miniMapWidth = 200;
-		var miniMapHeight = 200;
+		
+		var miniMapWidth = 250;
+		var miniMapHeight = 250;
 		var miniMapScale = 0.05;
 		
 		this.context.translate(window.innerWidth - miniMapWidth,0);
+		
+		// this.context.scale(1 + 1 * this.zoomLevel,1 + 1 * this.zoomLevel);
 		
 
 		this.context.fillStyle = '#000000';
@@ -241,7 +277,8 @@ class GameCanvas {
 		this.context.globalAlpha = 1;
 		
 		// this.context.translate(10 - cameraX,10 - cameraY);
-		this.context.drawImage(this.planet1,10 - (cameraX * miniMapScale),10 - (cameraY * miniMapScale),this.planet1.width * miniMapScale,this.planet1.height * miniMapScale);
+		// this.context.drawImage(this.planet1,10 + (miniMapWidth / 2) - (cameraX * miniMapScale),10 + (miniMapHeight / 2) - (cameraY * miniMapScale),this.planet1.width * miniMapScale,this.planet1.height * miniMapScale);
+		this.context.drawImage(this.planet1,(miniMapWidth / 2) - 40 - (cameraX * miniMapScale),(miniMapHeight / 2) - 40 - (cameraY * miniMapScale),this.planet1.width * miniMapScale,this.planet1.height * miniMapScale);
 		this.context.restore();
 	}
 }

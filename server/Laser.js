@@ -29,7 +29,7 @@ class Laser extends GameObject {
 		this.laserShape = new p2.Circle({ radius: this.laserSize });
 
 		this.rigidBody = new p2.Body({ mass: 0.05, position:[this.x,this.y] });
-		this.rigidBody.type = this.type;
+		this.rigidBody.gameObjectType = this.type;
 		this.rigidBody.gameObject = this;
 		
 		this.rigidBody.collisionMask = global.game.SHIP;

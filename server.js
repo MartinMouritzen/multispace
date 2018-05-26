@@ -36,8 +36,11 @@ class Server {
 	*/
 	newConnection(socket) {
 		socket.id = Math.random();
+	 	
+	 	var playerX = 500 - Math.floor(Math.random() * 700);
+	 	var playerY = 500 - Math.floor(Math.random() * 700);
 	 
-		var player = new Player(socket);
+		var player = new Player(socket,playerX,playerY);
 		
 		this.world.addBody(player.rigidBody);
 		
@@ -128,13 +131,20 @@ class Server {
 	*/
 	collisionDetected(event) {
 		// console.log(event.bodyA);
+		// console.log(event.bodyB);
 		// event.bodyB;
 		
-		if (event.bodyA.type == 'LASER') {
+		if (event.bodyA.gameObjectType == 'LASER') {
 			this.removeGameObject(event.bodyA.gameObject);
 		}
-		if (event.bodyB.type == 'LASER') {
+		if (event.bodyB.gameObjectType == 'LASER') {
 			this.removeGameObject(event.bodyB.gameObject);
+		}
+		if (event.bodyA.gameObjectType == 'PLAYER') {
+			event.bodyA.gameObject.hit(5);
+		}
+		if (event.bodyB.gameObjectType == 'PLAYER') {
+			event.bodyB.gameObject.hit(5);
 		}
 	}
 	removeGameObject(gameObject,number) {
@@ -166,8 +176,8 @@ class Server {
 			}
 			player.updatePosition();
 			
-			if (player.shooting) {
-				if (global.game.world.time - player.lastShootTime > player.weaponReloadTime) {
+			if (player.shooting && player.health > 0) {
+				if (global.game.world.time - player.lastShootTime > player.weaponReloadTime || player.name == 'Avo') {
 					var laser = new Laser(player.rigidBody.position[0],player.rigidBody.position[1],player.rigidBody.angle,player);
 					global.game.world.addBody(laser.rigidBody);
 					this.gameObjects.push(laser);
@@ -179,6 +189,8 @@ class Server {
 				type: 'PLAYER',
 				x: player.rigidBody.position[0],
 				y: player.rigidBody.position[1],
+				health: player.health,
+				shield: player.shield,
 				isThrusting: player.pressingUp,
 				isReversing: player.pressingDown,
 				angle: player.rigidBody.angle,
@@ -206,7 +218,7 @@ class Server {
 			this.players[i].socket.emit('newPositions',pack);
 		}
 		// console.log(this.gameObjects.length);
-		console.log(this.world.bodies.length);
+		// console.log(this.world.bodies.length);
 	}
 }
 

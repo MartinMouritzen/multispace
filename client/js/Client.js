@@ -33,6 +33,22 @@ class Client {
 			Login.fadeInSplash();
 		}
 		window.onblur = () => { this.stopAllMovement() };
+		
+		document.addEventListener("mousewheel",(event) => { this.handleMouseWheel(event); }, false);
+	}
+	handleMouseWheel(event) {
+		if (event.deltaY > 0) {
+			game.gameCanvas.zoomLevel -= 0.1;
+		}
+		else {
+			game.gameCanvas.zoomLevel += 0.1;
+		}
+		if (game.gameCanvas.zoomLevel > 1.6) {
+			game.gameCanvas.zoomLevel = 1.6;
+		}
+		else if (game.gameCanvas.zoomLevel < 0.7) {
+			game.gameCanvas.zoomLevel = 0.7;
+		}
 	}
 	stopAllMovement() {
 		game.network.socket.emit('keyPress',{ inputId:'all', state: false } );

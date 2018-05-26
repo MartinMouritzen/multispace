@@ -2,19 +2,25 @@ var p2 = require('p2');
 const uuidv1 = require('uuid/v1');
 
 var GameObject = require('./GameObject.js');
+var Ship = require('./Ship.js');
 
 class Player extends GameObject {
 	/**
 	*
 	*/
-	constructor(socket) {
-		super();
+	constructor(socket,x,y) {
+		super(x,y);
 	
 		this.id = socket.id;
 		this.publicId = uuidv1();
 		this.socket = socket;
 		this.name = false;
 		this.type = 'PLAYER';
+		
+		this.health = 100;
+		this.shield = 50;
+		
+		this.ship = new Ship(x,y);
 		
 		this.lastShootTime = 0;
 		this.weaponReloadTime = 0.1;
@@ -28,9 +34,9 @@ class Player extends GameObject {
 		this.rigidBody.damping = 0.8;
 		this.rigidBody.angularDamping = 0.8;
 		this.rigidBody.addShape(this.shipShape);
-		this.rigidBody.collisionResponse = true;
+		// this.rigidBody.collisionResponse = true;
 		
-		this.rigidBody.TYPE = this.type;
+		this.rigidBody.gameObjectType = this.type;
 		this.rigidBody.gameObject = this;
 		
 		this.rigidBody.collisionMask = global.game.LASER;
@@ -42,6 +48,19 @@ class Player extends GameObject {
 		this.pressingDown = false;
 		this.shooting = false;
 	}
+	/**
+	*
+	*/
+	hit(damage) {
+		this.health -= damage;
+		if (this.health < 0) {
+			this.name = 'LOL DEAD!';
+			this.rigidBody.mass = '2000';
+		}
+	}
+	/**
+	*
+	*/
 	increaseAngle() {
 		this.rigidBody.angularVelocity = -this.shipTurnSpeed;
 	}
@@ -68,8 +87,7 @@ class Player extends GameObject {
 		if (this.pressingUp) {
 			this.rigidBody.applyForceLocal([0,-2400]);
 		}
-		
-		if (this.pressingDown) {
+		else if (this.pressingDown) {
 			this.rigidBody.applyForceLocal([0,600]);
 		}
 	}

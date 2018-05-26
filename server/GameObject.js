@@ -2,9 +2,9 @@ class GameObject {
 	/**
 	*
 	*/
-	constructor() {
-		this.x = 200;
-		this.y = 200;
+	constructor(x,y) {
+		this.x = x;
+		this.y = y;
 		
 		this.angle = 0;
 		
