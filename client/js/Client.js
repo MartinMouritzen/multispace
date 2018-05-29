@@ -23,6 +23,8 @@ class Client {
 		
 		this.listenForEvents();
 		
+		game.network.lastDataReceived = false;
+		
 		var username = Tools.getParameterByName('username');
 		
 		if (username && username.length > 2) {
@@ -36,6 +38,9 @@ class Client {
 		
 		document.addEventListener("mousewheel",(event) => { this.handleMouseWheel(event); }, false);
 	}
+	/**
+	*
+	*/
 	handleMouseWheel(event) {
 		if (event.deltaY > 0) {
 			game.gameCanvas.zoomLevel -= 0.1;
@@ -71,11 +76,24 @@ class Client {
 			game.input.listenForInput();
 			game.gui.chat.showChat();
 		});
-		game.network.socket.on('newPositions',(data) => {
-			game.gameCanvas.paint(data);
+		game.network.socket.on('syncPositions',(data) => {
+			for(var i = 0 ; i < data.length; i++) {
+				if (data[i].type == 'PLAYER') {
+					
+				}
+			}
+			game.network.lastDataReceived = data;
 		});
 		game.network.socket.on('chatMessage',(data) => {
 			game.gui.chat.addChatMessage(data.user,data.message);
+		});
+		game.network.socket.on('playerLoggedOut',(data) => {
+			console.log('log out');
+			game.gui.chat.addChatMessage('System',data.name + ' logged out!');
+		});
+		game.network.socket.on('newPlayer',(data) => {
+			console.log('log in');
+			game.gui.chat.addChatMessage('System',data.name + ' logged in!');
 		});
 	}
 }

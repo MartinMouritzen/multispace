@@ -10,5 +10,23 @@ class GameObject {
 		
 		this.type = 'unknown';
 	}
+	/**
+	*
+	*/
+	getAngle() {
+		return 0;
+	}
+	/**
+	*
+	*/
+	getX() {
+		return this.x;
+	}
+	/**
+	*
+	*/
+	getY() {
+		return this.y;
+	}
 }
 module.exports = GameObject;

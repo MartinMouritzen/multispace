@@ -40,13 +40,38 @@ class Laser extends GameObject {
 		this.rigidBody.angularDamping = 0;
 		this.rigidBody.addShape(this.laserShape);
 		this.rigidBody.angle = angle;
-		this.rigidBody.applyForceLocal([0,-4400]);
+		this.rigidBody.applyForceLocal([0,-6400]);
 		// 2 * Math.cos(angle) + shipBody.velocity[0],
 		// 2 * Math.sin(angle) + shipBody.velocity[1]
 		// this.rigidBody.velocity[0] += ship.rigidBody.velocity[0];
 		// this.rigidBody.velocity[1] += ship.rigidBody.velocity[1];
 		// this.rigidBody.velocity[0] = 100;
 		// this.rigidBody.velocity[1] = 100;
+	}
+	/**
+	*
+	*/
+	getAngle(normalized = false) {
+		if (normalized) {
+			var angle = this.rigidBody.angle % (2*Math.PI);
+			if(angle < 0){
+				angle += (2 * Math.PI);
+			}
+			return angle;
+		}
+		return this.rigidBody.angle;
+	}
+	/**
+	*
+	*/
+	getX() {
+		return this.rigidBody.position[0];
+	}
+	/**
+	*
+	*/
+	getY() {
+		return this.rigidBody.position[1];
 	}
 }
 module.exports = Laser;

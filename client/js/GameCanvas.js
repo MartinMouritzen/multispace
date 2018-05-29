@@ -14,6 +14,9 @@ class GameCanvas {
 		
 		this.background = new Image();
 		this.background.src = '/resources/images/background/purple.jpg';
+		
+		document.body.style.backgroundImage = 'url("/resources/images/background/purple.jpg")';
+		// alert(document.body.style.backgroundImage);
 
 		this.sun = new Image();
 		this.sun.src = '/resources/images/planets/sun.png';
@@ -34,6 +37,8 @@ class GameCanvas {
 		
 		this.jet1 = new Image();
 		this.jet1.src = '/resources/images/spaceships/jets/jet1-yellow.png';
+		
+		this.paint();
 	}
 	/**
 	*
@@ -96,176 +101,179 @@ class GameCanvas {
 	/**
 	*
 	*/
-	paint(data) {
-		var viewportX = window.innerWidth / 2;
-		var viewportY = window.innerHeight / 2;
+	paint() {
+		stats.begin();
 		
-		if (!game.client.loggedIn) {
-			if (!this.filterSet) {
-				//this.context.filter = 'saturate(20)';
-//				this.filterSet = true;
-			}
-		}
+		var data = game.network.lastDataReceived;
 		
-		this.context.save();
-		
-		// Repaint canvas. Move to own function
-		this.context.font= "12px Arial";
-		this.context.fillStyle = '#000000';
-		
-		var currentPlayer = false;
-		for(var i = 0 ; i < data.length; i++) {
-			if (game.client.loggedIn && data[i].id == game.client.id) {
-				currentPlayer = data[i];
-			}
-		}
-		var realCameraX = -100;
-		var realCameraY = 0;
-		var cameraX = realCameraX;
-		var cameraY = realCameraY;
-
-		if (currentPlayer) {
-			realCameraX = currentPlayer.x - viewportX;
-			realCameraY = currentPlayer.y - viewportY;
-			cameraX = currentPlayer.x - viewportX / this.zoomLevel;
-			cameraY = currentPlayer.y - viewportY / this.zoomLevel;
-		}
-		
-		// this.context.drawImage(this.background,0,0,window.innerWidth,window.innerHeight);
-		this.drawImageProp(this.context,this.background,0,0,window.innerWidth,window.innerHeight);
-		
-		this.context.drawImage(this.stars1,-cameraX * 0.1,-cameraY * 0.1);
-		this.context.drawImage(this.stars2,-cameraX * 0.4,-cameraY * 0.4);
-		
-		this.context.scale(this.zoomLevel,this.zoomLevel);
-		
-		// game.drawSprite(game.sprites["spr_stars01"], viewportX + (game.camera.x / 1.05), viewportY + (game.camera.y / 1.05));
-		// game.drawSprite(game.sprites["spr_stars02"], viewportX + (game.camera.x / 1.1), viewportY + (game.camera.y / 1.1));
-		
-		// this.context.save();
-		// this.context.translate(window.innerWidth / 2,window.innerHeight / 2);
-		
-		this.context.save();
-		this.context.translate(100 - cameraX,100 - cameraY);
-		this.context.drawImage(this.planet1,0,0);
-		this.context.restore();
-		
-		this.context.save();
-		this.context.translate(3700 - cameraX,3700 - cameraY);
-		this.context.drawImage(this.sun,0,0);
-		this.context.restore();
-
-		for(var i = 0 ; i < data.length; i++) {
-			if (data[i].type == 'LASER') {
-				var laserImage = this.laser;
-				
-
-				this.context.save();
-	
-				this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
-				
-				this.context.rotate(data[i].angle);
-				
-				this.context.drawImage(laserImage,-(laserImage.width / 2),-(laserImage.height / 2));
-				
-				
-				this.context.restore();
-			}
-			else if (data[i].type == 'PLAYER') {
-				var shipImage = this.ship1;
-				var jetImage = this.jet1;
-				
-				this.context.textAlign = 'center';
-				
-				this.context.save();
-	
-				this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
-				
-				// this.context.translate(shipImage.width / 2,shipImage.height / 2);
-				
-				this.context.rotate(data[i].angle);
-				
-				if (data[i].isThrusting) {
-					this.context.drawImage(jetImage,-(shipImage.width / 2) + 12,(shipImage.height / 2) - 10);
+		if (data) {
+			var viewportX = window.innerWidth / 2;
+			var viewportY = window.innerHeight / 2;
+			
+			this.context.save();
+			this.context.beginPath();
+			
+			this.context.font= "12px Arial";
+			this.context.fillStyle = '#000000';
+			
+			var currentPlayer = false;
+			for(var i = 0 ; i < data.length; i++) {
+				if (game.client.loggedIn && data[i].id == game.client.id) {
+					currentPlayer = data[i];
 				}
-				else if (data[i].isReversing) {
+			}
+			var realCameraX = -100;
+			var realCameraY = 0;
+			var cameraX = realCameraX;
+			var cameraY = realCameraY;
+	
+			if (currentPlayer) {
+				realCameraX = currentPlayer.x - viewportX;
+				realCameraY = currentPlayer.y - viewportY;
+				cameraX = currentPlayer.x - viewportX / this.zoomLevel;
+				cameraY = currentPlayer.y - viewportY / this.zoomLevel;
+			}
+			
+			// this.context.drawImage(this.background,0,0,window.innerWidth,window.innerHeight);
+			// this.drawImageProp(this.context,this.background,0,0,window.innerWidth,window.innerHeight);
+			this.context.clearRect(0,0,window.innerWidth,window.innerHeight);
+			
+			this.context.drawImage(this.stars1,-cameraX * 0.1,-cameraY * 0.1);
+			this.context.drawImage(this.stars2,-cameraX * 0.4,-cameraY * 0.4);
+			
+			this.context.scale(this.zoomLevel,this.zoomLevel);
+			
+			// game.drawSprite(game.sprites["spr_stars01"], viewportX + (game.camera.x / 1.05), viewportY + (game.camera.y / 1.05));
+			// game.drawSprite(game.sprites["spr_stars02"], viewportX + (game.camera.x / 1.1), viewportY + (game.camera.y / 1.1));
+			
+			// this.context.save();
+			// this.context.translate(window.innerWidth / 2,window.innerHeight / 2);
+			
+			this.context.save();
+			this.context.translate(100 - cameraX,100 - cameraY);
+			this.context.drawImage(this.planet1,0,0);
+			this.context.restore();
+			
+			this.context.save();
+			this.context.translate(3700 - cameraX,3700 - cameraY);
+			this.context.drawImage(this.sun,0,0);
+			this.context.restore();
+	
+			for(var i = 0 ; i < data.length; i++) {
+				if (data[i].type == 'LASER') {
+					var laserImage = this.laser;
+					
+	
 					this.context.save();
-					this.context.scale(1,-1);
-					this.context.drawImage(jetImage,-16,16,(jetImage.width / 2),(jetImage.height / 2));
-					this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
+		
+					this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
+					
+					this.context.rotate(data[i].angle);
+					
+					this.context.drawImage(laserImage,-(laserImage.width / 2),-(laserImage.height / 2));
+					
+					
 					this.context.restore();
 				}
-				/*
-				this.context.beginPath();
-				this.context.arc(0,0,30,0,2*Math.PI);
-				this.context.fill();
-				this.context.closePath();
-				*/
-				
-				this.context.drawImage(shipImage,-(shipImage.width / 2),-(shipImage.height / 2));
-				
-				if (game.client.loggedIn) {
-					this.context.rotate(-data[i].angle);
-					// this.context.fillStyle = '#000000';
-					// this.context.fillText(data[i].name,-9,shipImage.height + 11);
-					// this.context.fillStyle = '#FFFFFF';
-					// this.context.fillText(data[i].name,-10,shipImage.height + 10);
+				else if (data[i].type == 'PLAYER') {
+					var shipImage = this.ship1;
+					var jetImage = this.jet1;
 					
-					this.context.fillStyle = '#FFFFFF';
-					this.context.strokeStyle = '#000000';
-					this.context.lineWidth = 3;
-					this.context.miterLimit = 2;
-					this.context.strokeText(data[i].name,0,shipImage.height + 10);
-					this.context.fillText(data[i].name,0,shipImage.height + 10);
+					this.context.textAlign = 'center';
 					
-					this.context.translate(-50,0);
+					this.context.save();
+		
+					this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
 					
-					this.context.fillStyle = '#FFFFFF';
-					this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
+					// this.context.translate(shipImage.width / 2,shipImage.height / 2);
 					
-					var healthBarGradient = this.context.createLinearGradient(0,0,100,0);
-					healthBarGradient.addColorStop(0,'#5c0304');
-					// healthBarGradient.addColorStop(0.5,'#98010d');
-					healthBarGradient.addColorStop(1,'#98010d');
+					this.context.rotate(data[i].angle);
 					
-					this.context.fillStyle = healthBarGradient;
-					this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
-
-					this.context.strokeStyle  = '#000000';
-					this.context.lineWidth = 1;
-					this.context.strokeRect(0,shipImage.height + 20,100,10);
+					if (data[i].isThrusting) {
+						this.context.drawImage(jetImage,-(shipImage.width / 2) + 12,(shipImage.height / 2) - 10);
+					}
+					else if (data[i].isReversing) {
+						this.context.save();
+						this.context.scale(1,-1);
+						this.context.drawImage(jetImage,-16,16,(jetImage.width / 2),(jetImage.height / 2));
+						this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
+						this.context.restore();
+					}
+					/*
+					this.context.beginPath();
+					this.context.arc(0,0,30,0,2*Math.PI);
+					this.context.fill();
+					this.context.closePath();
+					*/
 					
+					this.context.drawImage(shipImage,-(shipImage.width / 2),-(shipImage.height / 2));
+					
+					if (game.client.loggedIn) {
+						this.context.rotate(-data[i].angle);
+						// this.context.fillStyle = '#000000';
+						// this.context.fillText(data[i].name,-9,shipImage.height + 11);
+						// this.context.fillStyle = '#FFFFFF';
+						// this.context.fillText(data[i].name,-10,shipImage.height + 10);
+						
+						this.context.fillStyle = '#FFFFFF';
+						this.context.strokeStyle = '#000000';
+						this.context.lineWidth = 3;
+						this.context.miterLimit = 2;
+						this.context.strokeText(data[i].name,0,shipImage.height + 10);
+						this.context.fillText(data[i].name,0,shipImage.height + 10);
+						
+						this.context.translate(-50,0);
+						
+						this.context.fillStyle = '#FFFFFF';
+						this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
+						
+						var healthBarGradient = this.context.createLinearGradient(0,0,100,0);
+						healthBarGradient.addColorStop(0,'#5c0304');
+						// healthBarGradient.addColorStop(0.5,'#98010d');
+						healthBarGradient.addColorStop(1,'#98010d');
+						
+						this.context.fillStyle = healthBarGradient;
+						this.context.fillRect(0,shipImage.height + 20,(data[i].health > 0 ? data[i].health : 0),10);
+	
+						this.context.strokeStyle  = '#000000';
+						this.context.lineWidth = 1;
+						this.context.strokeRect(0,shipImage.height + 20,100,10);
+						
+					}
+					this.context.restore();
 				}
-				this.context.restore();
 			}
-		}
-		this.context.restore();
-		
-		if (game.client.loggedIn) {
-			this.context.fillStyle = '#FFFFFF';
-			this.context.font= "16px Arial";
+			this.context.restore();
 			
-			if (isNaN(currentPlayer.y) || isNaN(currentPlayer.x)) {
-				this.context.fillText('0:0',window.innerWidth - 100,window.innerHeight - 100);
+			if (game.client.loggedIn) {
+				this.context.fillStyle = '#FFFFFF';
+				this.context.font= "16px Arial";
+				
+				if (isNaN(currentPlayer.y) || isNaN(currentPlayer.x)) {
+					this.context.fillText('0:0',window.innerWidth - 100,window.innerHeight - 100);
+				}
+				else {
+					this.context.fillText(Math.round(currentPlayer.x / 100) + ':' + Math.round(currentPlayer.y / 100),window.innerWidth - 100,window.innerHeight - 100);
+				}
+				// CameraX and Y can probably be moved onto the camera object, then we don't have to pass them around
+				this.paintMiniMap(realCameraX,realCameraY);
+				// game.gui.miniMap.paint(this.context,cameraX,cameraY);
 			}
-			else {
-				this.context.fillText(Math.round(currentPlayer.x / 100) + ':' + Math.round(currentPlayer.y / 100),window.innerWidth - 100,window.innerHeight - 100);
-			}
-			// CameraX and Y can probably be moved onto the camera object, then we don't have to pass them around
-			this.paintMiniMap(realCameraX,realCameraY);
-			// game.gui.miniMap.paint(this.context,cameraX,cameraY);
 		}
-		
-		
+		window.requestAnimationFrame(() => { this.paint() },this.canvas);
+		stats.end();
 	}
 	paintMiniMap(cameraX,cameraY) {
 		this.context.save();
 		
-		var miniMapWidth = 250;
-		var miniMapHeight = 250;
+		var miniMapWidth = 206;
+		var miniMapHeight = 206;
 		var miniMapScale = 0.05;
 		
 		this.context.translate(window.innerWidth - miniMapWidth,0);
+		
+		this.context.rect(0,0,miniMapWidth,miniMapHeight);
+		this.context.clip();
 		
 		// this.context.scale(1 + 1 * this.zoomLevel,1 + 1 * this.zoomLevel);
 		

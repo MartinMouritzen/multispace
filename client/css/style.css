@@ -6,6 +6,10 @@ html, body {
 	height: 100%;
 	
 	overflow: hidden;
+	
+	background-color: #000000;
+	
+	cursor: url(/resources/images/gui/cursors/default_normal.png), auto;
 }
 #loginOverlay {
 	position: absolute;

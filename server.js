@@ -4,6 +4,7 @@ var serv = require('http').Server(app);
 
 var Laser = require('./server/Laser.js');
 var Player = require('./server/Player.js');
+var AI = require('./server/AI.js');
 
 var p2 = require('p2');
 
@@ -12,6 +13,44 @@ global.game.SHIP = Math.pow(2,1);
 global.game.LASER = Math.pow(2,2);
 
 class Server {
+	constructor() {
+		this.ai = [];
+		this.players = {};
+		this.gameObjects = [];
+	}
+	/**
+	*
+	*/
+	init() {
+		this.initStaticFiles();
+		
+		var port = 20001;
+
+		serv.listen(port);
+		console.log("Server started at port: " + port);
+		
+		this.world = new p2.World({
+			gravity : [0,0],
+		});
+		this.world.defaultContactMaterial.friction = 0;
+		
+		this.world.on("beginContact",(event) => {
+			this.collisionDetected(event);
+		});
+		
+		global.game.world = this.world;
+		
+		var io = require('socket.io')(serv,{});
+
+		io.sockets.on('connection',(socket) => {
+			this.newConnection(socket);
+		});
+		
+		// Just for test
+		this.addAI(200,200);
+		 
+		setInterval(() => { this.tick() },1000 / 25);
+	}
 	/**
 	*
 	*/
@@ -34,6 +73,21 @@ class Server {
 	/**
 	*
 	*/
+	addPlayer() {
+		
+	}
+	/**
+	*
+	*/
+	addAI() {
+		var ai = new AI(200,200);
+		global.game.world.addBody(ai.rigidBody);
+		
+		this.ai.push(ai);
+	}
+	/**
+	*
+	*/
 	newConnection(socket) {
 		socket.id = Math.random();
 	 	
@@ -48,10 +102,11 @@ class Server {
 		
 		socket.on('login',(data) => {
 			this.players[socket.id].name = data.name;
+			this.players[socket.id].active = true;
 			
 			socket.emit('loginCompleted',{ id: this.players[socket.id].id });
 			
-			this.broadcastToPlayersInZone('newPlayer',{
+			this.broadcastToPlayersInZone(0,'newPlayer',{
 				publicId: this.players[socket.id].publicId,
 				name: this.players[socket.id].name,
 				ship: 'stiletto'
@@ -68,6 +123,11 @@ class Server {
 		});
 	   
 		socket.on('disconnect',() => {
+			this.broadcastToPlayersInZone(0,'playerLoggedOut',{
+				publicId: this.players[socket.id].publicId,
+				name: this.players[socket.id].name
+			});
+			
 			global.game.world.removeBody(this.players[socket.id].rigidBody);
 			delete this.players[socket.id];
 		});
@@ -99,52 +159,18 @@ class Server {
 	/**
 	*
 	*/
-	init() {
-		this.players = {};
-		this.gameObjects = [];
-		this.initStaticFiles();
-
-		serv.listen(20001);
-		console.log("Server started.");
-		
-		this.world = new p2.World({
-			gravity : [0,0],
-		});
-		this.world.defaultContactMaterial.friction = 0;
-		
-		this.world.on("beginContact",(event) => {
-			this.collisionDetected(event);
-		});
-		
-		global.game.world = this.world;
-		
-		var io = require('socket.io')(serv,{});
-
-		io.sockets.on('connection',(socket) => {
-			this.newConnection(socket);
-		});
-		 
-		setInterval(() => { this.tick() },1000 / 25);
-	}
-	/**
-	*
-	*/
 	collisionDetected(event) {
 		// console.log(event.bodyA);
 		// console.log(event.bodyB);
 		// event.bodyB;
 		
-		if (event.bodyA.gameObjectType == 'LASER') {
+		if (event.bodyA.gameObjectType == 'LASER' && event.bodyB.gameObjectType == 'PLAYER') {
 			this.removeGameObject(event.bodyA.gameObject);
-		}
-		if (event.bodyB.gameObjectType == 'LASER') {
-			this.removeGameObject(event.bodyB.gameObject);
-		}
-		if (event.bodyA.gameObjectType == 'PLAYER') {
-			event.bodyA.gameObject.hit(5);
-		}
-		if (event.bodyB.gameObjectType == 'PLAYER') {
 			event.bodyB.gameObject.hit(5);
+		}
+		if (event.bodyB.gameObjectType == 'LASER' && event.bodyA.gameObjectType == 'PLAYER') {
+			this.removeGameObject(event.bodyB.gameObject);
+			event.bodyA.gameObject.hit(5);
 		}
 	}
 	removeGameObject(gameObject,number) {
@@ -177,7 +203,7 @@ class Server {
 			player.updatePosition();
 			
 			if (player.shooting && player.health > 0) {
-				if (global.game.world.time - player.lastShootTime > player.weaponReloadTime || player.name == 'Avo') {
+				if (global.game.world.time - player.lastShootTime > player.weaponReloadTime) {
 					var laser = new Laser(player.rigidBody.position[0],player.rigidBody.position[1],player.rigidBody.angle,player);
 					global.game.world.addBody(laser.rigidBody);
 					this.gameObjects.push(laser);
@@ -187,8 +213,8 @@ class Server {
 			
 			pack.push({
 				type: 'PLAYER',
-				x: player.rigidBody.position[0],
-				y: player.rigidBody.position[1],
+				x: player.getX(),
+				y: player.getY(),
 				health: player.health,
 				shield: player.shield,
 				isThrusting: player.pressingUp,
@@ -196,6 +222,25 @@ class Server {
 				angle: player.rigidBody.angle,
 				id: player.id,
 				name: player.name
+			});	
+		}
+		
+		for(var i in this.ai) {
+			var aiPlayer = this.ai[i];
+			
+			aiPlayer.updateAI();
+
+			pack.push({
+				type: 'PLAYER',
+				x: aiPlayer.getX(),
+				y: aiPlayer.getY(),
+				health: aiPlayer.health,
+				shield: aiPlayer.shield,
+				isThrusting: false,
+				isReversing: false,
+				angle: aiPlayer.rigidBody.angle,
+				id: aiPlayer.id,
+				name: 'Evil AI'
 			});	
 		}
 		
@@ -208,14 +253,14 @@ class Server {
 			}
 			pack.push({
 				type: gameObject.type,
-				x: gameObject.rigidBody.position[0],
-				y: gameObject.rigidBody.position[1],
+				x: gameObject.getX(),
+				y: gameObject.getY(),
 				angle: gameObject.rigidBody.angle
 			});
 		}
 		
 		for(var i in this.players){
-			this.players[i].socket.emit('newPositions',pack);
+			this.players[i].socket.emit('syncPositions',pack);
 		}
 		// console.log(this.gameObjects.length);
 		// console.log(this.world.bodies.length);
@@ -225,4 +270,4 @@ class Server {
 var server = new Server();
 server.init();
 
-game.server = server;
+global.game.server = server;
