@@ -11,6 +11,9 @@ class Ship extends GameObject {
 		this.health = 100;
 		this.shield = 50;
 		
+		this.isThrusting = false;
+		this.isReversing = false;
+		
 		this.lastShootTime = 0;
 		this.weaponReloadTime = 0.1;
 		

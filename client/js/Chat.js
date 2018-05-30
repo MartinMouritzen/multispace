@@ -56,6 +56,8 @@ class Chat {
 		var chatUser = document.createElement('DIV');
 		var chatText = document.createElement('DIV');
 		
+		chatMessage.style.display = 'none';
+		
 		chatMessage.className = 'chatMessage';
 		chatUser.className = 'chatUser';
 		chatText.className = 'chatText';
@@ -75,6 +77,8 @@ class Chat {
 		
 		document.getElementById('chatMessages').appendChild(chatMessage);
 		
-		document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+		$(chatMessage).fadeIn('fast',() => {
+			document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+		});
 	}
 }

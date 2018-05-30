@@ -18,6 +18,7 @@ class Client {
 		game.input = new Input();
 		game.client = this;
 		game.gameCanvas = new GameCanvas();
+		game.debugMessage = '';
 		
 		this.playersInZone = {};
 		
@@ -94,6 +95,9 @@ class Client {
 		game.network.socket.on('newPlayer',(data) => {
 			console.log('log in');
 			game.gui.chat.addChatMessage('System',data.name + ' logged in!');
+		});
+		game.network.socket.on('debug',(data) => {
+			game.debugMessage = data;
 		});
 	}
 }

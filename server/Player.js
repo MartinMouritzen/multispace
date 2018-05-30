@@ -65,9 +65,17 @@ class Player extends Ship {
 
 		if (this.pressingUp) {
 			this.goForward();
+			this.isThrusting = true;
+			this.isReversing = false;
 		}
 		else if (this.pressingDown) {
 			this.goBackward();
+			this.isThrusting = false;
+			this.isReversing = true;
+		}
+		else {
+			this.isThrusting = false;
+			this.isReversing = false;
 		}
 	}
 }

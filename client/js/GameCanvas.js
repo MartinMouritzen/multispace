@@ -260,6 +260,11 @@ class GameCanvas {
 				// game.gui.miniMap.paint(this.context,cameraX,cameraY);
 			}
 		}
+		
+		if (game.client.loggedIn && game.debugMessage && game.debugMessage.length > 0) {
+			this.context.fillText(game.debugMessage,window.innerWidth - 1000,window.innerHeight - 50);
+		}
+		
 		window.requestAnimationFrame(() => { this.paint() },this.canvas);
 		stats.end();
 	}

@@ -11,6 +11,7 @@ class AI extends Ship {
 		this.rigidBody.angle = 0;
 		this.rigidBody.gameObjectType = this.type;
 		this.rigidBody.gameObject = this;
+		this.rigidBody.angularVelocity = 0;
 		
 		this.action = 'idle';
 		this.target = false;
@@ -22,54 +23,70 @@ class AI extends Ship {
 	*/
 	updateAI() {
 		var aiLocation = new Point(this.getX(),this.getY());
-		if (this.target) {
+		if (this.target && this.target.active) {
 			var targetLocation = new Point(this.target.getX(),this.target.getY());
-			var radiansBetweenAIAndPlayer = Point.radiansBetween(targetLocation,aiLocation);
 			
-			var desiredAngle = Math.atan2(targetLocation.y - aiLocation.y, targetLocation.x - aiLocation.x)
-			var desiredAngleDegrees = desiredAngle * 180 / Math.PI;
-			
-			this.dx = this.getX() - this.target.getX() ;
-			this.dy = this.getY() - this.target.getY();
-			this.distance = Math.sqrt((this.dx*this.dx) + (this.dy*this.dy));
-			var desiredA = Math.atan2(this.dy,this.dx) * 180 / Math.PI;
-			// this.rigidBody.angle = 0;
-			
-			this.rigidBody.angle = (desiredA - 90) * Math.PI / 180;
-			
-			// this.rigidBody.angle = Point.normalizeAngle(desiredA * Math.PI / 180);
-			
-			// console.log('desiredAngle: ' + desiredAngle + ':' + this.getAngle());
-			// console.log('angleBetweenAIAndPlayer: ' + angleBetweenAIAndPlayer);
-
-			// var angleToMove = 
-
-
-			// var directionToMove = radiansBetweenAIAndPlayer - this.getAngle();
+			var radiansBetweenAIAndPlayer = Point.radiansBetween(aiLocation,targetLocation);
+			var degreesBetweenAIAndPlayer = Math.round(radiansBetweenAIAndPlayer * 180 / Math.PI);
 			/*
-			if (directionToMove < 1) {
-				this.increaseAngle();
-			}
-			else if (directionToMove > -1) {
-				this.decreaseAngle();
-			}
+			
+			
+			
+			var degreesBetweenAIAndPlayer = radiansBetweenAIAndPlayer * 180 / Math.PI;
+			
+			var currentAngleDegrees = (this.getAngle(true) * 180 / Math.PI);
+			
+			
+			
+			var desiredAngleDegrees = degreesBetweenAIAndPlayer - currentAngleDegrees;
+			
+			global.game.server.debug(Math.round(currentAngleDegrees) + ':' + Math.round(degreesBetweenAIAndPlayer) + ':' + Math.round(desiredAngleDegrees));
 			*/
 			
+			var currentAngle = this.getAngle(true);
+			if (currentAngle < 0) {
+				currentAngle += 2*Math.PI;
+			}
+			if (radiansBetweenAIAndPlayer < 0) {
+				radiansBetweenAIAndPlayer += 2*Math.PI;
+			}
 			
+			var currentAngleDegrees = Math.round(currentAngle * 180 / Math.PI);
+			
+			var desiredAngleDegrees = 90 + degreesBetweenAIAndPlayer;
+			
+			var degreesToMoveToFaceEnemy = desiredAngleDegrees - currentAngleDegrees;
+
+			// global.game.server.debug('degreesBetweenAIAndPlayer: ' + degreesBetweenAIAndPlayer + ' | currentAngleDegrees:' + currentAngleDegrees + ' | desiredAngleDegrees: ' + desiredAngleDegrees + ' | degreesToMoveToFaceEnemy: ' + degreesToMoveToFaceEnemy);
+
 			/*
-	        if (direction_move < 6) this.rotating = -1;
-	        if (direction_move > -6) this.rotating = 1;
-	
-	        if (direction_move < 6 && direction_move > -6)
-	        {
-	            this.angle = direction;
-	            this.rotating = 0;
-	        }
-	
-	        if (distance > (_target.w / 2) + (this.w * 1.5) + 10) this.moving = 1;
-	        else if (distance < (_target.w / 2) + (this.w * 1.5)) this.moving = -1;
-	        else this.moving = 0;
-	        */
+			if (degreesToMoveToFaceEnemy < -24) {
+				this.increaseAngle();
+			}
+			else if (degreesToMoveToFaceEnemy > 24) {
+				this.decreaseAngle();
+			}
+			else if (degreesToMoveToFaceEnemy < 24 && degreesToMoveToFaceEnemy > -24) {
+				this.rigidBody.angle = desiredAngleDegrees * Math.PI / 180;
+			}
+			*/
+			this.rigidBody.angle = desiredAngleDegrees * Math.PI / 180;
+
+			var distance = this.getDistanceTo(this.target);
+			if (distance > 300) {
+				this.goForward();
+				this.isThrusting = true;
+				this.isReversing = false;
+			}
+			else if (distance <= 200) {
+				this.goBackward();
+				this.isThrusting = false;
+				this.isReversing = true;
+			}
+			else {
+				this.isThrusting = false;
+				this.isReversing = false;
+			}
 		}
 		else {
 			var [nearestEnemy,nearestEnemyDistance] = this.getNearestEnemy();
@@ -87,7 +104,14 @@ class AI extends Ship {
 	/**
 	*
 	*/
-	getAngle() {
+	getAngle(normalized = false) {
+		if (normalized) {
+			var angle = this.rigidBody.angle % (2*Math.PI);
+			if(angle < 0){
+				angle += (2*Math.PI);
+			}
+			return angle;
+		}
 		return this.rigidBody.angle;
 	}
 	/**
@@ -101,6 +125,15 @@ class AI extends Ship {
 	*/
 	getY() {
 		return this.rigidBody.position[1];
+	}
+	/**
+	*
+	*/
+	getDistanceTo(gameObject) {
+		var aiLocation = new Point(this.getX(),this.getY());
+		var gameObjectLocation = new Point(gameObject.getX(),gameObject.getY());
+		var distance = Point.distanceBetween(gameObjectLocation,aiLocation);
+		return distance;
 	}
 	/**
 	*

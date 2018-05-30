@@ -46,8 +46,17 @@ class Server {
 			this.newConnection(socket);
 		});
 		
+		var aiX = -200;
+		var aiY = 2000;
+		
 		// Just for test
-		this.addAI(200,200);
+		/*
+		for(var i=0;i<20;i++) {
+			this.addAI(aiX + (50 * i),aiY - (50 * i));
+		}
+		*/
+		this.addAI(50,50);
+
 		 
 		setInterval(() => { this.tick() },1000 / 25);
 	}
@@ -79,11 +88,13 @@ class Server {
 	/**
 	*
 	*/
-	addAI() {
-		var ai = new AI(200,200);
+	addAI(x,y) {
+		var ai = new AI(x,y);
 		global.game.world.addBody(ai.rigidBody);
-		
 		this.ai.push(ai);
+	}
+	debug(message) {
+		this.broadcastToPlayersInZone(-1,"debug",message);
 	}
 	/**
 	*
@@ -129,6 +140,7 @@ class Server {
 			});
 			
 			global.game.world.removeBody(this.players[socket.id].rigidBody);
+			this.players[socket.id].active = false;
 			delete this.players[socket.id];
 		});
 	   
@@ -217,8 +229,8 @@ class Server {
 				y: player.getY(),
 				health: player.health,
 				shield: player.shield,
-				isThrusting: player.pressingUp,
-				isReversing: player.pressingDown,
+				isThrusting: player.isThrusting,
+				isReversing: player.isReversing,
 				angle: player.rigidBody.angle,
 				id: player.id,
 				name: player.name
@@ -236,8 +248,8 @@ class Server {
 				y: aiPlayer.getY(),
 				health: aiPlayer.health,
 				shield: aiPlayer.shield,
-				isThrusting: false,
-				isReversing: false,
+				isThrusting: aiPlayer.isThrusting,
+				isReversing: aiPlayer.isReversing,
 				angle: aiPlayer.rigidBody.angle,
 				id: aiPlayer.id,
 				name: 'Evil AI'
