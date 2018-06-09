@@ -1,6 +1,6 @@
 # A 2D multiplayer top down Space Game, based on Node / Javascript / Canvas
 
-Still in early developments, but should serve as a decent foundation for someone starting.
+Still in early development, but should serve as a decent foundation for someone starting.
 
 ## How to run
 ```
@@ -21,6 +21,7 @@ The beautiful art in the game was made by [Tatermand](https://opengameart.org/co
 - More sectors
 - Make the AI shoot
 - Trading with planets
+- Have the physics on the clientside as well, so it runs smoother on higher latency connections.
 
 Depending on the direction of the game
 - Leaderboard
