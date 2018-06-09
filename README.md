@@ -11,3 +11,6 @@ npm install
 npm start
 then direct your browser to http://localhost:20001
 ```
+
+## Screenshot
+![A screenshot of the game](http://martinmouritzen.dk/files/multispace/topdown-space-game-node-javascript.png)
