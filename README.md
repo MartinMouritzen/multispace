@@ -1,6 +1,4 @@
-# Multiplayer Space Game
-
-A Node based multiplayer space game.
+# A 2D multiplayer top down Space Game, based on Node / Javascript / Canvas
 
 Still in early developments, but should serve as a decent foundation for someone starting.
 
