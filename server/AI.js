@@ -28,20 +28,6 @@ class AI extends Ship {
 			
 			var radiansBetweenAIAndPlayer = Point.radiansBetween(aiLocation,targetLocation);
 			var degreesBetweenAIAndPlayer = Math.round(radiansBetweenAIAndPlayer * 180 / Math.PI);
-			/*
-			
-			
-			
-			var degreesBetweenAIAndPlayer = radiansBetweenAIAndPlayer * 180 / Math.PI;
-			
-			var currentAngleDegrees = (this.getAngle(true) * 180 / Math.PI);
-			
-			
-			
-			var desiredAngleDegrees = degreesBetweenAIAndPlayer - currentAngleDegrees;
-			
-			global.game.server.debug(Math.round(currentAngleDegrees) + ':' + Math.round(degreesBetweenAIAndPlayer) + ':' + Math.round(desiredAngleDegrees));
-			*/
 			
 			var currentAngle = this.getAngle(true);
 			if (currentAngle < 0) {
@@ -59,17 +45,6 @@ class AI extends Ship {
 
 			// global.game.server.debug('degreesBetweenAIAndPlayer: ' + degreesBetweenAIAndPlayer + ' | currentAngleDegrees:' + currentAngleDegrees + ' | desiredAngleDegrees: ' + desiredAngleDegrees + ' | degreesToMoveToFaceEnemy: ' + degreesToMoveToFaceEnemy);
 
-			/*
-			if (degreesToMoveToFaceEnemy < -24) {
-				this.increaseAngle();
-			}
-			else if (degreesToMoveToFaceEnemy > 24) {
-				this.decreaseAngle();
-			}
-			else if (degreesToMoveToFaceEnemy < 24 && degreesToMoveToFaceEnemy > -24) {
-				this.rigidBody.angle = desiredAngleDegrees * Math.PI / 180;
-			}
-			*/
 			this.rigidBody.angle = desiredAngleDegrees * Math.PI / 180;
 
 			var distance = this.getDistanceTo(this.target);

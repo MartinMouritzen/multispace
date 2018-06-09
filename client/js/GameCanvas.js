@@ -16,7 +16,6 @@ class GameCanvas {
 		this.background.src = '/resources/images/background/purple.jpg';
 		
 		document.body.style.backgroundImage = 'url("/resources/images/background/purple.jpg")';
-		// alert(document.body.style.backgroundImage);
 
 		this.sun = new Image();
 		this.sun.src = '/resources/images/planets/sun.png';
@@ -98,6 +97,23 @@ class GameCanvas {
 	    // fill image in dest. rectangle
 	    ctx.drawImage(img, cx, cy, cw, ch,  x, y, w, h);
 	}
+	createOffscreenCanvas(width,height) {
+		var offScreenCanvas = document.createElement('canvas');
+		offScreenCanvas.width = width;
+		offScreenCanvas.height = height;
+		return offScreenCanvas; //return canvas element
+	}
+	drawAndCacheOffscreenCanvas(image,key) {
+		if (!this.canvasCache) {
+			this.canvasCache = {};
+		}
+		if (!this.canvasCache[key]) {
+			var canvas = this.createOffscreenCanvas(image.width,image.height);
+			canvas.getContext('2d').drawImage(image,0,0);
+			this.canvasCache[key] = canvas;
+		}
+		return this.canvasCache[key];
+	}
 	/**
 	*
 	*/
@@ -138,8 +154,8 @@ class GameCanvas {
 			// this.drawImageProp(this.context,this.background,0,0,window.innerWidth,window.innerHeight);
 			this.context.clearRect(0,0,window.innerWidth,window.innerHeight);
 			
-			this.context.drawImage(this.stars1,-cameraX * 0.1,-cameraY * 0.1);
-			this.context.drawImage(this.stars2,-cameraX * 0.4,-cameraY * 0.4);
+			// this.context.drawImage(this.stars1,-cameraX * 0.1,-cameraY * 0.1);
+			// this.context.drawImage(this.stars2,-cameraX * 0.4,-cameraY * 0.4);
 			
 			this.context.scale(this.zoomLevel,this.zoomLevel);
 			
@@ -199,12 +215,6 @@ class GameCanvas {
 						this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
 						this.context.restore();
 					}
-					/*
-					this.context.beginPath();
-					this.context.arc(0,0,30,0,2*Math.PI);
-					this.context.fill();
-					this.context.closePath();
-					*/
 					
 					this.context.drawImage(shipImage,-(shipImage.width / 2),-(shipImage.height / 2));
 					
@@ -280,17 +290,12 @@ class GameCanvas {
 		this.context.rect(0,0,miniMapWidth,miniMapHeight);
 		this.context.clip();
 		
-		// this.context.scale(1 + 1 * this.zoomLevel,1 + 1 * this.zoomLevel);
-		
-
 		this.context.fillStyle = '#000000';
 		this.context.fillRect(window.innerWidth - miniMapWidth,0,miniMapWidth,miniMapHeight);
 		this.context.globalAlpha = 0.8;
 		this.drawImageProp(this.context,this.background,0,0,miniMapWidth,miniMapHeight);
 		this.context.globalAlpha = 1;
 		
-		// this.context.translate(10 - cameraX,10 - cameraY);
-		// this.context.drawImage(this.planet1,10 + (miniMapWidth / 2) - (cameraX * miniMapScale),10 + (miniMapHeight / 2) - (cameraY * miniMapScale),this.planet1.width * miniMapScale,this.planet1.height * miniMapScale);
 		this.context.drawImage(this.planet1,(miniMapWidth / 2) - 40 - (cameraX * miniMapScale),(miniMapHeight / 2) - 40 - (cameraY * miniMapScale),this.planet1.width * miniMapScale,this.planet1.height * miniMapScale);
 		this.context.restore();
 	}

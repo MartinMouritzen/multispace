@@ -15,6 +15,12 @@ class Input {
 	*
 	*/
 	listenForInput() {
+		document.onmousedown = (event) => {
+			game.network.socket.emit('keyPress',{ inputId:'shoot', state: true });
+		}
+		document.onmouseup = (event) => {
+			game.network.socket.emit('keyPress',{ inputId:'shoot', state: false });
+		}
 		document.onkeydown = (event) => {
 			// prevent game from sending thousands of events.
 			if (event.repeat != undefined && event.repeat) {
@@ -32,39 +38,39 @@ class Input {
 
 			if (!game.gui.chat.chatting) {
 				if(event.keyCode === this.KEY_D) {
-					game.network.socket.emit('keyPress',{ inputId:'right', state:true } );
+					game.network.socket.emit('keyPress',{ inputId:'right', state:true });
 				}
 				else if(event.keyCode === this.KEY_S) {
-					game.network.socket.emit('keyPress',{ inputId:'down', state: true } );
+					game.network.socket.emit('keyPress',{ inputId:'down', state: true });
 				}
 				else if(event.keyCode === this.KEY_A) {
-					game.network.socket.emit('keyPress',{ inputId:'left', state: true});
+					game.network.socket.emit('keyPress',{ inputId:'left', state: true });
 				}
 				else if(event.keyCode === this.KEY_W) {
-					game.network.socket.emit('keyPress',{ inputId:'up', state: true});
+					game.network.socket.emit('keyPress',{ inputId:'up', state: true });
 				}
 				if (event.keyCode === this.KEY_SPACE) {
-					game.network.socket.emit('keyPress',{ inputId:'shoot', state: true});
+					game.network.socket.emit('keyPress',{ inputId:'shoot', state: true });
 				}
 			}
 		}
 		document.onkeyup = (event) => {
 			if (!game.gui.chat.chatting) {
 				if(event.keyCode === this.KEY_D) {
-					game.network.socket.emit('keyPress',{ inputId:'right',state: false } );
+					game.network.socket.emit('keyPress',{ inputId:'right',state: false });
 				}
 				else if(event.keyCode === this.KEY_S) {
-					game.network.socket.emit('keyPress',{ inputId:'down', state:false } );
+					game.network.socket.emit('keyPress',{ inputId:'down', state:false });
 				}
 				else if(event.keyCode === this.KEY_A) {
-					game.network.socket.emit('keyPress',{ inputId:'left',state:false } );
+					game.network.socket.emit('keyPress',{ inputId:'left',state:false });
 				}
 				else if(event.keyCode === this.KEY_W) {
-					game.network.socket.emit('keyPress',{ inputId:'up',state:false } );
+					game.network.socket.emit('keyPress',{ inputId:'up',state:false });
 				}
 				
 				if (event.keyCode === this.KEY_SPACE) {
-					game.network.socket.emit('keyPress',{ inputId:'shoot', state: false});
+					game.network.socket.emit('keyPress',{ inputId:'shoot', state: false });
 				}
 			}
 		}

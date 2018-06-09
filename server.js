@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
+var sanitizeHtml = require('sanitize-html');
 
 var Laser = require('./server/Laser.js');
 var Player = require('./server/Player.js');
@@ -46,16 +47,16 @@ class Server {
 			this.newConnection(socket);
 		});
 		
-		var aiX = -200;
-		var aiY = 2000;
-		
+		var aiX = 1000;
+		var aiY = 1000;
 		// Just for test
 		/*
-		for(var i=0;i<20;i++) {
+		for(var i=0;i<200;i++) {
 			this.addAI(aiX + (50 * i),aiY - (50 * i));
 		}
 		*/
 		this.addAI(50,50);
+		this.addAI(200,200);
 
 		 
 		setInterval(() => { this.tick() },1000 / 25);
@@ -125,10 +126,13 @@ class Server {
 		});
 		
 		socket.on('chatMessage',(data) => {
+			var chatMessage = sanitizeHtml(data.message,{
+				allowedTags: []
+			});
 			for(var i in this.players){
 				this.players[i].socket.emit('chatMessage',{
 					user: this.players[socket.id].name,
-					message: data.message
+					message: chatMessage
 				});
 			}
 		});
@@ -172,10 +176,6 @@ class Server {
 	*
 	*/
 	collisionDetected(event) {
-		// console.log(event.bodyA);
-		// console.log(event.bodyB);
-		// event.bodyB;
-		
 		if (event.bodyA.gameObjectType == 'LASER' && event.bodyB.gameObjectType == 'PLAYER') {
 			this.removeGameObject(event.bodyA.gameObject);
 			event.bodyB.gameObject.hit(5);
@@ -274,8 +274,6 @@ class Server {
 		for(var i in this.players){
 			this.players[i].socket.emit('syncPositions',pack);
 		}
-		// console.log(this.gameObjects.length);
-		// console.log(this.world.bodies.length);
 	}
 }
 
