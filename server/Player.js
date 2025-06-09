@@ -23,6 +23,7 @@ class Player extends Ship {
 		this.pressingUp = false;
 		this.pressingDown = false;
 		this.shooting = false;
+		this.currentSystem = 'sol'; // Track current system
 	}
 	/**
 	*

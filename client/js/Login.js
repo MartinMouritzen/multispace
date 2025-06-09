@@ -15,6 +15,8 @@ class Login {
 	static loginFromForm() {
 		var username = $('#username').val();
 		if (username.length > 2 && username.length < 10) {
+			// Save to localStorage immediately when form is submitted
+			localStorage.setItem('gameUsername', username);
 			game.network.socket.emit('login', { name: username });
 			this.removeLoginScreen();
 		}

@@ -24,7 +24,13 @@ class GameCanvas {
 		this.laser.src = '/resources/images/lasers/laser1.png';
 
 		this.planet1 = new Image();
-		this.planet1.src = '/resources/images/planets/aurelia.png';
+		this.planet1.src = '/resources/images/planets/planet2.png'; // Earth-like for Aurelia
+		
+		this.planet2 = new Image();
+		this.planet2.src = '/resources/images/planets/planet3.png'; // Desert for Nexus
+		
+		this.planet3 = new Image();
+		this.planet3.src = '/resources/images/planets/aurelia.png'; // Original for Frontier
 		
 		this.stars1 = new Image();
 		this.stars1.src = '/resources/images/background/stars1.png';
@@ -34,8 +40,20 @@ class GameCanvas {
 		this.ship1 = new Image();
 		this.ship1.src = '/resources/images/spaceships/test/ship1.png';
 		
+		this.traderShip = new Image();
+		this.traderShip.src = '/resources/images/spaceships/test/ship1.png';
+		
 		this.jet1 = new Image();
 		this.jet1.src = '/resources/images/spaceships/jets/jet1-yellow.png';
+		
+		// System transition effect
+		this.transitionEffect = {
+			active: false,
+			progress: 0,
+			duration: 2, // seconds
+			fromSystem: null,
+			toSystem: null
+		};
 		
 		this.paint();
 	}
@@ -51,6 +69,56 @@ class GameCanvas {
 	/**
 	*
 	*/
+	drawScaledPlanet(image, x, y, name, maxWidth = 400) {
+		if (!image || !image.complete) return;
+		
+		// Calculate scale to fit within maxWidth
+		var scale = Math.min(maxWidth / image.width, 1);
+		var width = image.width * scale;
+		var height = image.height * scale;
+		
+		// Draw the planet
+		this.context.save();
+		this.context.translate(x, y);
+		this.context.drawImage(image, 0, 0, width, height);
+		
+		// Add planet name
+		this.context.fillStyle = '#ffffff';
+		this.context.strokeStyle = '#000000';
+		this.context.lineWidth = 3;
+		this.context.font = '16px Arial';
+		this.context.textAlign = 'center';
+		this.context.strokeText(name, width / 2, height + 20);
+		this.context.fillText(name, width / 2, height + 20);
+		
+		this.context.restore();
+	}
+	
+	drawScaledSun(image, x, y, name, maxWidth = 600) {
+		if (!image || !image.complete) return;
+		
+		// Calculate scale to fit within maxWidth
+		var scale = Math.min(maxWidth / image.width, 1);
+		var width = image.width * scale;
+		var height = image.height * scale;
+		
+		// Draw the sun
+		this.context.save();
+		this.context.translate(x, y);
+		this.context.drawImage(image, 0, 0, width, height);
+		
+		// Add sun name with yellow tint
+		this.context.fillStyle = '#ffff88';
+		this.context.strokeStyle = '#000000';
+		this.context.lineWidth = 3;
+		this.context.font = '18px Arial';
+		this.context.textAlign = 'center';
+		this.context.strokeText(name, width / 2, height + 25);
+		this.context.fillText(name, width / 2, height + 25);
+		
+		this.context.restore();
+	}
+	
 	drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
 	    if (arguments.length === 2) {
 	        x = y = 0;
@@ -165,15 +233,17 @@ class GameCanvas {
 			// this.context.save();
 			// this.context.translate(window.innerWidth / 2,window.innerHeight / 2);
 			
-			this.context.save();
-			this.context.translate(100 - cameraX,100 - cameraY);
-			this.context.drawImage(this.planet1,0,0);
-			this.context.restore();
+			// Planet 1 - Aurelia
+			this.drawScaledPlanet(this.planet1, 100 - cameraX, 100 - cameraY, 'Aurelia');
 			
-			this.context.save();
-			this.context.translate(3700 - cameraX,3700 - cameraY);
-			this.context.drawImage(this.sun,0,0);
-			this.context.restore();
+			// Planet 2 - Nexus
+			this.drawScaledPlanet(this.planet2, 2500 - cameraX, 1200 - cameraY, 'Nexus');
+			
+			// Planet 3 - Frontier
+			this.drawScaledPlanet(this.planet3, 1500 - cameraX, 2800 - cameraY, 'Frontier');
+			
+			// Sun - using a larger max width since suns are typically bigger
+			this.drawScaledSun(this.sun, 3700 - cameraX, 3700 - cameraY, 'Sol', 600);
 	
 			for(var i = 0 ; i < data.length; i++) {
 				if (data[i].type == 'LASER') {
@@ -252,6 +322,124 @@ class GameCanvas {
 					}
 					this.context.restore();
 				}
+				else if (data[i].type == 'TRADER') {
+					var traderImage = this.traderShip;
+					var jetImage = this.jet1;
+					
+					this.context.textAlign = 'center';
+					
+					this.context.save();
+		
+					this.context.translate(data[i].x - cameraX,data[i].y - cameraY);
+					
+					this.context.rotate(data[i].angle);
+					
+					if (data[i].isThrusting) {
+						this.context.drawImage(jetImage,-(traderImage.width / 2) + 12,(traderImage.height / 2) - 10);
+					}
+					else if (data[i].isReversing) {
+						this.context.save();
+						this.context.scale(1,-1);
+						this.context.drawImage(jetImage,-16,16,(jetImage.width / 2),(jetImage.height / 2));
+						this.context.drawImage(jetImage,-2,16,(jetImage.width / 2),(jetImage.height / 2));
+						this.context.restore();
+					}
+					
+					// Tint trader ship differently (greenish)
+					this.context.save();
+					this.context.globalCompositeOperation = 'multiply';
+					this.context.fillStyle = '#80ff80';
+					this.context.fillRect(-(traderImage.width / 2), -(traderImage.height / 2), traderImage.width, traderImage.height);
+					this.context.globalCompositeOperation = 'source-over';
+					this.context.restore();
+					
+					this.context.drawImage(traderImage,-(traderImage.width / 2),-(traderImage.height / 2));
+					
+					if (game.client.loggedIn) {
+						this.context.rotate(-data[i].angle);
+						
+						this.context.fillStyle = '#80ff80';
+						this.context.strokeStyle = '#000000';
+						this.context.lineWidth = 2;
+						this.context.miterLimit = 2;
+						this.context.strokeText(data[i].name,0,traderImage.height + 10);
+						this.context.fillText(data[i].name,0,traderImage.height + 10);
+					}
+					this.context.restore();
+				}
+				else if (data[i].type == 'EXPLOSION') {
+					// Draw explosion particles
+					if (data[i].particles && data[i].particles.length > 0) {
+						this.context.save();
+						
+						for (let particle of data[i].particles) {
+							this.context.save();
+							this.context.translate(particle.x - cameraX, particle.y - cameraY);
+							
+							// Create gradient for particle glow effect
+							var gradient = this.context.createRadialGradient(0, 0, 0, 0, 0, particle.size);
+							gradient.addColorStop(0, `rgba(255, 200, 0, ${particle.alpha})`);
+							gradient.addColorStop(0.5, `rgba(255, 100, 0, ${particle.alpha * 0.8})`);
+							gradient.addColorStop(1, `rgba(255, 0, 0, ${particle.alpha * 0.3})`);
+							
+							this.context.fillStyle = gradient;
+							this.context.beginPath();
+							this.context.arc(0, 0, particle.size, 0, Math.PI * 2);
+							this.context.fill();
+							
+							this.context.restore();
+						}
+						
+						this.context.restore();
+					}
+				}
+			else if (data[i].type == 'STARGATE') {
+				// Draw star gate
+				this.context.save();
+				this.context.translate(data[i].x - cameraX, data[i].y - cameraY);
+				
+				// Animated rotating portal effect
+				var time = Date.now() / 1000;
+				this.context.rotate(time * 0.5);
+				
+				// Outer ring
+				var gradient = this.context.createRadialGradient(0, 0, 0, 0, 0, data[i].radius);
+				gradient.addColorStop(0, 'rgba(0, 100, 255, 0)');
+				gradient.addColorStop(0.7, 'rgba(0, 150, 255, 0.3)');
+				gradient.addColorStop(0.9, 'rgba(100, 200, 255, 0.8)');
+				gradient.addColorStop(1, 'rgba(200, 255, 255, 1)');
+				
+				this.context.fillStyle = gradient;
+				this.context.beginPath();
+				this.context.arc(0, 0, data[i].radius, 0, Math.PI * 2);
+				this.context.fill();
+				
+				// Inner swirl
+				this.context.rotate(-time * 1.5);
+				var gradient2 = this.context.createRadialGradient(0, 0, 0, 0, 0, data[i].radius * 0.7);
+				gradient2.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+				gradient2.addColorStop(0.5, 'rgba(100, 150, 255, 0.4)');
+				gradient2.addColorStop(1, 'rgba(0, 50, 200, 0)');
+				
+				this.context.fillStyle = gradient2;
+				this.context.beginPath();
+				this.context.arc(0, 0, data[i].radius * 0.7, 0, Math.PI * 2);
+				this.context.fill();
+				
+				// Label
+				this.context.restore();
+				this.context.save();
+				this.context.translate(data[i].x - cameraX, data[i].y - cameraY);
+				this.context.fillStyle = '#80ccff';
+				this.context.strokeStyle = '#000000';
+				this.context.lineWidth = 2;
+				this.context.font = '14px Arial';
+				this.context.textAlign = 'center';
+				this.context.strokeText('Star Gate', 0, data[i].radius + 20);
+				this.context.fillText('Star Gate', 0, data[i].radius + 20);
+				
+				this.context.restore();
+			}
 			}
 			this.context.restore();
 			
@@ -273,6 +461,47 @@ class GameCanvas {
 		
 		if (game.client.loggedIn && game.debugMessage && game.debugMessage.length > 0) {
 			this.context.fillText(game.debugMessage,window.innerWidth - 1000,window.innerHeight - 50);
+		}
+		
+		// System transition effect
+		if (this.transitionEffect.active) {
+			var elapsed = (Date.now() - this.transitionEffect.startTime) / 1000;
+			this.transitionEffect.progress = Math.min(elapsed / this.transitionEffect.duration, 1);
+			
+			// Fade to white then back
+			var alpha = 0;
+			if (this.transitionEffect.progress < 0.5) {
+				alpha = this.transitionEffect.progress * 2;
+			} else {
+				alpha = (1 - this.transitionEffect.progress) * 2;
+			}
+			
+			this.context.save();
+			this.context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+			this.context.fillRect(0, 0, window.innerWidth, window.innerHeight);
+			
+			// Blur effect
+			if (alpha > 0) {
+				this.context.filter = `blur(${alpha * 20}px)`;
+			}
+			
+			// System name display
+			if (alpha > 0.3) {
+				this.context.filter = 'none';
+				this.context.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+				this.context.font = '48px Arial';
+				this.context.textAlign = 'center';
+				var systemName = this.transitionEffect.progress < 0.5 ? 
+					'Leaving ' + this.transitionEffect.fromSystem :
+					'Entering ' + this.transitionEffect.toSystem;
+				this.context.fillText(systemName, window.innerWidth / 2, window.innerHeight / 2);
+			}
+			
+			this.context.restore();
+			
+			if (this.transitionEffect.progress >= 1) {
+				this.transitionEffect.active = false;
+			}
 		}
 		
 		window.requestAnimationFrame(() => { this.paint() },this.canvas);

@@ -26,9 +26,9 @@ class Ship extends GameObject {
 		this.rigidBody.damping = 0.8;
 		this.rigidBody.angularDamping = 0.8;
 		this.rigidBody.addShape(this.shipShape);
-		this.rigidBody.collisionResponse = false;
+		this.rigidBody.collisionResponse = true;
 		
-		this.rigidBody.collisionMask = global.game.LASER;
+		this.rigidBody.collisionMask = global.game.LASER | global.game.OBSTACLE | global.game.STARGATE;
 		this.rigidBody.collisionGroup = global.game.SHIP;
 	}
 	/**
