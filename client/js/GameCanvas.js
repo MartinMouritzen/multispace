@@ -440,6 +440,79 @@ class GameCanvas {
 				
 				this.context.restore();
 			}
+			else if (data[i].type == 'SPACESTATION') {
+				// Draw space station
+				this.context.save();
+				this.context.translate(data[i].x - cameraX, data[i].y - cameraY);
+				this.context.rotate(data[i].angle);
+				
+				// Main body - octagonal shape
+				this.context.fillStyle = '#666666';
+				this.context.strokeStyle = '#333333';
+				this.context.lineWidth = 2;
+				
+				var size = 40;
+				var sides = 8;
+				this.context.beginPath();
+				for (var j = 0; j < sides; j++) {
+					var angle = (j / sides) * Math.PI * 2;
+					var x = Math.cos(angle) * size;
+					var y = Math.sin(angle) * size;
+					if (j === 0) {
+						this.context.moveTo(x, y);
+					} else {
+						this.context.lineTo(x, y);
+					}
+				}
+				this.context.closePath();
+				this.context.fill();
+				this.context.stroke();
+				
+				// Central hub
+				this.context.fillStyle = '#444444';
+				this.context.beginPath();
+				this.context.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+				this.context.fill();
+				
+				// Solar panels/arms
+				this.context.strokeStyle = '#888888';
+				this.context.lineWidth = 4;
+				for (var k = 0; k < 4; k++) {
+					var armAngle = (k / 4) * Math.PI * 2;
+					this.context.beginPath();
+					this.context.moveTo(0, 0);
+					this.context.lineTo(Math.cos(armAngle) * size * 1.5, Math.sin(armAngle) * size * 1.5);
+					this.context.stroke();
+					
+					// Solar panel at end
+					this.context.save();
+					this.context.translate(Math.cos(armAngle) * size * 1.5, Math.sin(armAngle) * size * 1.5);
+					this.context.rotate(armAngle + Math.PI / 2);
+					this.context.fillStyle = '#224488';
+					this.context.fillRect(-15, -5, 30, 10);
+					this.context.restore();
+				}
+				
+				// Add some lights
+				this.context.fillStyle = '#ffff00';
+				for (var l = 0; l < sides; l++) {
+					var lightAngle = (l / sides) * Math.PI * 2;
+					var lightX = Math.cos(lightAngle) * size * 0.8;
+					var lightY = Math.sin(lightAngle) * size * 0.8;
+					this.context.beginPath();
+					this.context.arc(lightX, lightY, 2, 0, Math.PI * 2);
+					this.context.fill();
+				}
+				
+				// Station name
+				this.context.rotate(-data[i].angle);
+				this.context.fillStyle = '#cccccc';
+				this.context.font = '12px Arial';
+				this.context.textAlign = 'center';
+				this.context.fillText('Station ' + data[i].planetName, 0, size + 25);
+				
+				this.context.restore();
+			}
 			}
 			this.context.restore();
 			

@@ -11,6 +11,7 @@ var Trader = require('./server/Trader.js');
 var Explosion = require('./server/Explosion.js');
 var StarGate = require('./server/StarGate.js');
 var SystemManager = require('./server/SystemManager.js');
+var SpaceStation = require('./server/SpaceStation.js');
 
 var p2 = require('p2');
 
@@ -27,10 +28,15 @@ class Server {
 		this.players = {};
 		this.gameObjects = [];
 		this.starGates = [];
+		this.spaceStations = [];
 		this.lastTraderSpawn = 0;
 		this.traderSpawnInterval = 10; // Faster spawning for more traders
 		this.maxTraders = 10; // Much more traders for lived-in feel
 		this.systemManager = new SystemManager();
+		
+		// Debug tracking for traders
+		this.traderDebug = {};
+		this.debugMode = process.env.DEBUG === 'true' || process.env.PORT === '20002';
 	}
 	/**
 	*
@@ -54,9 +60,11 @@ class Server {
 
 		global.game.world = this.world;
 		global.game.systemManager = this.systemManager;
+		global.game.server = this; // Add server reference for debugging
 
 		this.addObstacles();
 		this.addStarGates();
+		this.addSpaceStations();
 
 		var io = require('socket.io')(serv, {});
 
@@ -75,9 +83,18 @@ class Server {
 		this.addAI(50, 50);
 		this.addAI(200, 200);
 		
-		// Spawn initial trader after a short delay to ensure everything is initialized
+		// Spawn initial traders after a short delay to ensure everything is initialized
 		setTimeout(() => {
-			this.spawnTrader();
+			if (this.debugMode) {
+				console.log('Attempting initial trader spawn...');
+			}
+			// Spawn traders in different systems for variety
+			this.spawnTraderInSystem('sol');
+			this.spawnTraderInSystem('sol'); // Two in Sol where players start
+			this.spawnTraderInSystem('alpha');
+			if (this.debugMode) {
+				console.log(`Initial spawn complete. Traders: ${this.traders.length}`);
+			}
 		}, 100);
 
 
@@ -96,6 +113,8 @@ class Server {
 		console.log('  systems - Show all systems and planets');
 		console.log('  gates - List all star gates');
 		console.log('  spawn - Spawn a new trader');
+		console.log('  trader - Detailed debug info for first trader');
+		console.log('  physics - Show physics world state');
 		
 		process.stdin.on('data', (data) => {
 			var command = data.toString().trim();
@@ -138,6 +157,43 @@ class Server {
 			case 'spawn':
 				this.spawnTrader();
 				console.log('Spawned new trader');
+				break;
+				
+			case 'physics':
+				console.log('\n=== PHYSICS WORLD STATE ===');
+				console.log('World time:', global.game.world.time);
+				console.log('Bodies in world:', global.game.world.bodies.length);
+				console.log('Gravity:', global.game.world.gravity);
+				console.log('Sleeping bodies:', global.game.world.bodies.filter(b => b.sleepState === p2.Body.SLEEPING).length);
+				console.log('Default friction:', global.game.world.defaultContactMaterial.friction);
+				break;
+				
+			case 'trader':
+				// Dump detailed info for a specific trader
+				if (this.traders.length > 0) {
+					var trader = this.traders[0]; // First trader
+					console.log('\n=== DETAILED TRADER DEBUG ===');
+					console.log('ID:', trader.id);
+					console.log('Position:', [trader.getX(), trader.getY()]);
+					console.log('Velocity:', [...trader.rigidBody.velocity]);
+					console.log('Force:', [...trader.rigidBody.force]);
+					console.log('Mass:', trader.rigidBody.mass);
+					console.log('Damping:', trader.rigidBody.damping);
+					console.log('State:', trader.state);
+					console.log('Target:', trader.targetPlanet);
+					console.log('IsThrusting:', trader.isThrusting);
+					console.log('Update count:', trader._updateCount);
+					console.log('Body in world:', global.game.world.bodies.includes(trader.rigidBody));
+					console.log('Body sleeping:', trader.rigidBody.sleepState);
+					console.log('Current system:', trader.currentSystem);
+					
+					// Force values
+					console.log('\nPhysics state:');
+					console.log('World gravity:', global.game.world.gravity);
+					console.log('Body type:', trader.rigidBody.type);
+					console.log('Angle:', trader.rigidBody.angle);
+					console.log('Angular velocity:', trader.rigidBody.angularVelocity);
+				}
 				break;
 				
 			default:
@@ -188,6 +244,37 @@ class Server {
 	/**
 	*
 	*/
+	spawnTraderInSystem(systemId) {
+		var system = this.systemManager.systems[systemId];
+		if (!system) return;
+		
+		var spawnPlanet = system.planets[Math.floor(Math.random() * system.planets.length)];
+		var angle = Math.random() * Math.PI * 2;
+		var distance = 100 + Math.random() * 50; // Spawn much closer (100-150 units from planet)
+		
+		var spawnX = spawnPlanet.x + Math.cos(angle) * distance;
+		var spawnY = spawnPlanet.y + Math.sin(angle) * distance;
+		
+		var trader = new Trader(spawnX, spawnY);
+		trader.currentSystem = systemId;
+		global.game.world.addBody(trader.rigidBody);
+		this.traders.push(trader);
+		
+		// Give trader a small initial velocity to ensure movement starts
+		trader.rigidBody.velocity[0] = Math.cos(angle) * 50;
+		trader.rigidBody.velocity[1] = Math.sin(angle) * 50;
+		
+		if (this.debugMode) {
+			console.log(`Spawned trader at (${spawnX.toFixed(0)}, ${spawnY.toFixed(0)}) in system ${systemId}`);
+		}
+		
+		this.lastTraderSpawn = global.game.world.time;
+		return trader;
+	}
+	
+	/**
+	*
+	*/
 	spawnTrader() {
 		if (this.traders.length >= this.maxTraders) return;
 		
@@ -211,6 +298,10 @@ class Server {
 		// Give trader a small initial velocity to ensure movement starts
 		trader.rigidBody.velocity[0] = Math.cos(angle) * 50;
 		trader.rigidBody.velocity[1] = Math.sin(angle) * 50;
+		
+		if (this.debugMode) {
+			console.log(`Spawned trader at (${spawnX.toFixed(0)}, ${spawnY.toFixed(0)}) in system ${randomSystemId}`);
+		}
 		
 		this.lastTraderSpawn = global.game.world.time;
 	}
@@ -403,6 +494,18 @@ class Server {
 			}
 		}
 	}
+	
+	addSpaceStations() {
+		// Add a space station orbiting Aurelia in Sol system
+		var solSystem = this.systemManager.getSystem('sol');
+		var aurelia = solSystem.planets.find(p => p.id === 'aurelia');
+		
+		if (aurelia) {
+			var spaceStation = new SpaceStation(aurelia.x, aurelia.y, aurelia.name);
+			spaceStation.systemId = 'sol';
+			this.spaceStations.push(spaceStation);
+		}
+	}
 	addObstacles() {
 		// Example asteroid field - add several irregular polygon shapes
 		// Removed for now. the triangles didn't really look like asteroids.
@@ -548,13 +651,30 @@ class Server {
 
 		// Handle trader spawning
 		if (global.game.world.time - this.lastTraderSpawn > this.traderSpawnInterval) {
+			if (this.debugMode) {
+				console.log(`Trader spawn check: world.time=${global.game.world.time}, lastSpawn=${this.lastTraderSpawn}, interval=${this.traderSpawnInterval}, traders=${this.traders.length}/${this.maxTraders}`);
+			}
 			this.spawnTrader();
+		}
+
+		// Update space stations
+		for (var spaceStation of this.spaceStations) {
+			spaceStation.update(1 / 25); // deltaTime
 		}
 
 		// Update traders
 		for (var i = this.traders.length - 1; i >= 0; i--) {
 			var trader = this.traders[i];
 
+			// Debug tracking
+			if (this.debugMode) {
+				this.trackTraderDebug(trader);
+			}
+
+			// Track update calls
+			if (!trader._updateCount) trader._updateCount = 0;
+			trader._updateCount++;
+			
 			trader.updateAI();
 
 			// Only show traders that are not landed
@@ -570,7 +690,8 @@ class Server {
 					angle: trader.rigidBody.angle,
 					id: trader.id,
 					name: 'Trader',
-					state: trader.state
+					state: trader.state,
+					currentSystem: trader.currentSystem
 				});
 			}
 		}
@@ -604,31 +725,131 @@ class Server {
 			pack.push(objectData);
 		}
 		
-		// Add star gates for the current system only
-		for (var starGate of this.starGates) {
-			// For now, only show Sol system star gates since we don't track player systems yet
-			if (starGate.systemId === 'sol') {
-				pack.push({
-					type: 'STARGATE',
-					x: starGate.getX(),
-					y: starGate.getY(),
-					radius: starGate.radius,
-					targetSystem: starGate.targetSystem,
-					systemId: starGate.systemId
-				});
-			}
-		}
-		
-		// Add current system info to pack
-		if (pack.length > 0) {
-			pack.push({
-				type: 'SYSTEM_INFO',
-				currentSystem: 'sol' // For now, always Sol until we implement per-player system tracking
-			});
-		}
 
 		for (var i in this.players) {
-			this.players[i].socket.emit('syncPositions', pack);
+			var player = this.players[i];
+			
+			// Create player-specific pack with entities from their current system only
+			var playerPack = pack.filter(entity => {
+				// Keep all non-location based entities
+				if (!entity.x && !entity.y) return true;
+				
+				// Filter traders by system
+				if (entity.type === 'TRADER' && entity.currentSystem !== player.currentSystem) {
+					return false;
+				}
+				
+				// Keep all other entities (players, AI, lasers, etc) for now
+				// TODO: Eventually filter these by system too
+				return true;
+			});
+			
+			// Add star gates for the player's current system
+			for (var starGate of this.starGates) {
+				if (starGate.systemId === player.currentSystem) {
+					playerPack.push({
+						type: 'STARGATE',
+						x: starGate.getX(),
+						y: starGate.getY(),
+						radius: starGate.radius,
+						targetSystem: starGate.targetSystem,
+						systemId: starGate.systemId
+					});
+				}
+			}
+			
+			// Add space stations for the player's current system
+			for (var spaceStation of this.spaceStations) {
+				if (spaceStation.systemId === player.currentSystem) {
+					playerPack.push({
+						type: 'SPACESTATION',
+						x: spaceStation.getX(),
+						y: spaceStation.getY(),
+						angle: spaceStation.angle,
+						planetName: spaceStation.planetName
+					});
+				}
+			}
+			
+			// Add current system info
+			playerPack.push({
+				type: 'SYSTEM_INFO',
+				currentSystem: player.currentSystem
+			});
+			
+			player.socket.emit('syncPositions', playerPack);
+		}
+		
+		// Debug output for stuck traders
+		if (this.debugMode && global.game.world.time % 5 < 0.04) { // Every 5 seconds
+			this.debugStuckTraders();
+		}
+	}
+	
+	trackTraderDebug(trader) {
+		if (!this.traderDebug[trader.id]) {
+			this.traderDebug[trader.id] = {
+				positions: [],
+				velocities: [],
+				lastCheck: global.game.world.time
+			};
+		}
+		
+		var debug = this.traderDebug[trader.id];
+		debug.positions.push([trader.getX(), trader.getY()]);
+		debug.velocities.push([...trader.rigidBody.velocity]);
+		
+		// Keep only last 50 entries
+		if (debug.positions.length > 50) {
+			debug.positions.shift();
+			debug.velocities.shift();
+		}
+	}
+	
+	debugStuckTraders() {
+		console.log('\n=== TRADER MOVEMENT DEBUG ===');
+		var stuckCount = 0;
+		
+		this.traders.forEach((trader, i) => {
+			var debug = this.traderDebug[trader.id];
+			if (!debug || debug.positions.length < 10) return;
+			
+			// Check if trader moved in last 10 ticks
+			var positions = debug.positions.slice(-10);
+			var firstPos = positions[0];
+			var lastPos = positions[positions.length - 1];
+			var distance = Math.sqrt(
+				Math.pow(lastPos[0] - firstPos[0], 2) + 
+				Math.pow(lastPos[1] - firstPos[1], 2)
+			);
+			
+			var velocity = trader.rigidBody.velocity;
+			var speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
+			
+			if (distance < 5 && trader.state === 'flying') {
+				stuckCount++;
+				console.log(`STUCK Trader ${i}:`);
+				console.log(`  Position: (${Math.round(trader.getX())}, ${Math.round(trader.getY())})`);
+				console.log(`  Target: ${trader.targetPlanet ? trader.targetPlanet.name : 'NONE'}`);
+				console.log(`  State: ${trader.state}`);
+				console.log(`  Speed: ${speed.toFixed(2)}`);
+				console.log(`  Velocity: [${velocity[0].toFixed(2)}, ${velocity[1].toFixed(2)}]`);
+				console.log(`  Force: [${trader.rigidBody.force[0].toFixed(2)}, ${trader.rigidBody.force[1].toFixed(2)}]`);
+				console.log(`  Damping: ${trader.rigidBody.damping}`);
+				console.log(`  Mass: ${trader.rigidBody.mass}`);
+				console.log(`  IsThrusting: ${trader.isThrusting}`);
+				console.log(`  Distance moved in 10 ticks: ${distance.toFixed(2)}`);
+				
+				// Extra debug - check if physics body is in world
+				var bodyInWorld = global.game.world.bodies.includes(trader.rigidBody);
+				console.log(`  Body in world: ${bodyInWorld}`);
+			}
+		});
+		
+		if (stuckCount === 0) {
+			console.log('All traders are moving correctly!');
+		} else {
+			console.log(`\nFound ${stuckCount} stuck traders out of ${this.traders.length} total`);
 		}
 	}
 }

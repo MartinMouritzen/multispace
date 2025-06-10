@@ -16,6 +16,10 @@ class Trader extends Ship {
         this.rigidBody.damping = 0.1; // Further reduced from 0.3 for better movement
         this.rigidBody.angularDamping = 0.3; // Reduced from 0.5
         
+        // Override collision settings - traders should pass through other ships
+        this.rigidBody.collisionMask = global.game.OBSTACLE | global.game.STARGATE; // Remove LASER collision
+        this.rigidBody.collisionGroup = global.game.SHIP;
+        
         // Trader-specific properties
         this.state = 'flying'; // flying, landing, landed, departing
         this.targetPlanet = null;
@@ -94,14 +98,27 @@ class Trader extends Ship {
             
             // If still no target after trying, select a fallback destination
             if (!this.targetPlanet) {
-                console.log(`Trader ${this.id}: Using fallback destination`);
-                // Fallback to first planet in current system
-                this.targetPlanet = {
-                    x: 100,
-                    y: 100,
-                    name: 'Fallback Planet',
-                    isStarGate: false
-                };
+                // Try to get first planet in current system
+                var system = global.game.systemManager.getSystem(this.currentSystem);
+                if (system && system.planets && system.planets.length > 0) {
+                    this.targetPlanet = system.planets[0];
+                    console.log(`Trader ${this.id.substring(0,8)}: Using fallback to ${this.targetPlanet.name}`);
+                } else {
+                    // Ultimate fallback - go to Aurelia in Sol
+                    this.targetPlanet = {
+                        x: 100,
+                        y: 100,
+                        name: 'Aurelia',
+                        id: 'aurelia',
+                        isStarGate: false
+                    };
+                    console.log(`Trader ${this.id.substring(0,8)}: Using ultimate fallback to Aurelia`);
+                }
+            }
+            
+            // Debug first target selection only in debug mode
+            if (global.game.server && global.game.server.debugMode) {
+                console.log(`Trader ${this.id.substring(0,8)} selected target: ${this.targetPlanet.name}`);
             }
         }
         
@@ -127,9 +144,23 @@ class Trader extends Ship {
         // Check if trader is stuck (very low velocity)
         var velocity = this.rigidBody.velocity;
         var currentSpeed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
+        
+        // Debug log for stuck traders only
+        if (global.game.server && global.game.server.debugMode) {
+            if (!this.updateCount) this.updateCount = 0;
+            this.updateCount++;
+            
+            // Only log if stuck
+            if (currentSpeed < 5 && distance > 100 && this.updateCount > 10) {
+                console.log(`STUCK Trader ${this.id.substring(0,8)}: speed=${currentSpeed.toFixed(2)}, distance=${distance.toFixed(0)}`);
+            }
+        }
+        
         if (currentSpeed < 5 && distance > 100) {
             // Give a small push to get unstuck
             this.rigidBody.applyForceLocal([0, -2000]);
+            // Also ensure the body is awake
+            this.rigidBody.sleepState = 0; // AWAKE
         }
         
         // Check if close enough to start landing
@@ -196,11 +227,32 @@ class Trader extends Ship {
     updateLanding() {
         // Slow down and move toward planet center
         this.isThrusting = false;
-        this.isReversing = true;
+        this.isReversing = false;
         
         var traderLocation = new Point(this.getX(), this.getY());
         var planetLocation = new Point(this.currentPlanet.x, this.currentPlanet.y);
         var distance = Point.distanceBetween(traderLocation, planetLocation);
+        
+        // Apply braking force to slow down
+        var velocity = this.rigidBody.velocity;
+        var speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
+        
+        if (speed > 20) {
+            // Apply force opposite to velocity to brake
+            var brakeForce = 800;
+            var brakeX = -velocity[0] / speed * brakeForce;
+            var brakeY = -velocity[1] / speed * brakeForce;
+            this.rigidBody.applyForce([brakeX, brakeY]);
+        }
+        
+        // If moving too slow and still far, give a small push toward planet
+        if (speed < 10 && distance > 100) {
+            var radiansToPlanet = Point.radiansBetween(traderLocation, planetLocation);
+            var pushForce = 300;
+            var pushX = Math.cos(radiansToPlanet) * pushForce;
+            var pushY = Math.sin(radiansToPlanet) * pushForce;
+            this.rigidBody.applyForce([pushX, pushY]);
+        }
         
         // If very close to planet, land
         if (distance <= 80) {
@@ -211,6 +263,19 @@ class Trader extends Ship {
             // Move ship to planet surface (invisible)
             this.rigidBody.position[0] = this.currentPlanet.x;
             this.rigidBody.position[1] = this.currentPlanet.y;
+            this.rigidBody.velocity[0] = 0;
+            this.rigidBody.velocity[1] = 0;
+        }
+        
+        // Safety check - if stuck in landing for too long, abort
+        if (!this.landingStartTime) {
+            this.landingStartTime = global.game.world.time;
+        }
+        if (global.game.world.time - this.landingStartTime > 10) {
+            // Abort landing, go back to flying
+            this.state = 'flying';
+            this.landingStartTime = null;
+            this.selectRandomDestination();
         }
     }
     
@@ -231,6 +296,7 @@ class Trader extends Ship {
         if (distance >= this.landingDistance) {
             this.state = 'flying';
             this.currentPlanet = null;
+            this.landingStartTime = null; // Reset landing timer
         } else {
             // Move away from planet
             var radiansBetweenTraderAndPlanet = Point.radiansBetween(traderLocation, planetLocation);
@@ -271,6 +337,11 @@ class Trader extends Ship {
     goForward() {
         // Use 1/2 of normal thrust for traders (was 1/4 which was too weak)
         this.rigidBody.applyForceLocal([0, -1200]);
+        
+        // Ensure body is awake
+        if (this.rigidBody.sleepState === 2) { // p2.Body.SLEEPING
+            this.rigidBody.sleepState = 0; // p2.Body.AWAKE
+        }
     }
     
     // Override to apply speed limits

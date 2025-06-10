@@ -89,3 +89,11 @@ This is a multiplayer 2D space game with authoritative server-side physics:
 2. Add socket event in server.js
 3. Implement action logic server-side
 4. Update client rendering if needed
+
+## Testing & Debugging
+
+**Test-Driven Development:**
+- See `test-driven-development.md` for automated testing framework
+- Can run both server and client tests programmatically
+- Debug traders/AI: `DEBUG=true node server.js` or `PORT=20002 node server.js`
+- Test client available for automated gameplay testing

@@ -17,6 +17,7 @@ class AI extends Ship {
 		this.target = false;
 		
 		this.shootingRange = 400;
+		this.currentSystem = 'sol'; // AI ships start in Sol system
 	}
 	/**
 	*
